@@ -169,6 +169,10 @@ html,body{
   transition:all .15s;color:var(--text2);
   box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
+.toggle-btn:disabled{
+  opacity:0.35;cursor:not-allowed;
+}
+.toggle-btn:disabled:hover{background:var(--white);border-color:var(--gray3);color:var(--text2);box-shadow:none;}
 .toggle-btn.selected-in{
   background:var(--green);border-color:var(--green);color:#fff;
   box-shadow:0 4px 14px rgba(22,163,74,0.35);
@@ -511,10 +515,10 @@ canvas{display:none}
     <div class="action-row">
       <div class="section-label">🕐 Action</div>
       <div class="toggle-group">
-        <button class="toggle-btn selected-in" id="btnIn" onclick="selectAction('in')">
+        <button class="toggle-btn selected-in" id="btnIn" onclick="selectAction('in')" disabled>
           ✅ &nbsp;Log In
         </button>
-        <button class="toggle-btn" id="btnOut" onclick="selectAction('out')">
+        <button class="toggle-btn" id="btnOut" onclick="selectAction('out')" disabled>
           🚪 &nbsp;Log Out
         </button>
       </div>
@@ -732,6 +736,17 @@ function setGPSUI(s, txt){
   document.getElementById('gpsText').textContent = txt;
 }
 startGPS();
+
+// Enable Log In/Out only when name AND destination are filled
+function checkInputs(){
+  const name = document.getElementById('empName').value.trim();
+  const dest = document.getElementById('empDest').value.trim();
+  const ok = name.length > 0 && dest.length > 0;
+  document.getElementById('btnIn').disabled = !ok;
+  document.getElementById('btnOut').disabled = !ok;
+}
+document.getElementById('empName').addEventListener('input', checkInputs);
+document.getElementById('empDest').addEventListener('input', checkInputs);
 
 // ── Action toggle ──
 function selectAction(type){
