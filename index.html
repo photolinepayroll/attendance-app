@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#1e40af">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap" rel="stylesheet">
 <title>Employee Attendance</title>
 <style>
@@ -509,6 +511,9 @@ canvas{display:none}
         <div class="gps-dot" id="gpsDot"></div>
         <span class="gps-text" id="gpsText">Acquiring GPS location...</span>
       </div>
+      <div id="formMapWrap" style="display:none;border-radius:var(--radius-sm);overflow:hidden;height:130px;margin-top:8px;border:1px solid var(--gray3)">
+        <div id="formMap" style="width:100%;height:100%"></div>
+      </div>
     </div>
 
     <!-- Log In / Log Out FIRST -->
@@ -692,6 +697,21 @@ async function reverseGeocode(lat, lng){
   } catch(e){}
   return null;
 }
+function showFormMap(lat, lng){
+  var wrap = document.getElementById('formMapWrap');
+  wrap.style.display = 'block';
+  setTimeout(function(){
+    if(window._formMap){ window._formMap.remove(); window._formMap=null; }
+    var map = L.map('formMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+    var pinHtml = '<div style="width:14px;height:14px;background:#1e40af;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>';
+    var icon = L.divIcon({html:pinHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
+    map.setView([lat,lng],16);
+    L.marker([lat,lng],{icon:icon}).addTo(map);
+    window._formMap = map;
+  },200);
+}
+
 function startGPS(){
   if(!navigator.geolocation){
     gpsBlocked = true;
@@ -1017,6 +1037,8 @@ function showSuccess(r, timeStr){
   }
   document.getElementById('successOverlay').classList.remove('hidden');
 
+
+
   // Auto-prompt save photo
   if(r.img){
     setTimeout(()=>{ autoSavePhoto(r.img, r.name, r.ts); }, 800);
@@ -1076,6 +1098,8 @@ function resetForm(){
   document.getElementById('successOverlay').classList.add('hidden');
   document.getElementById('successImg').classList.add('hidden');
   document.getElementById('savePhotoTip').classList.add('hidden');
+  
+
   window.scrollTo(0,0);
 }
 
