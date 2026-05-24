@@ -565,7 +565,7 @@ canvas{display:none}
   </div>
   <div class="cam-bottom">
     <div class="spacer"></div>
-    <button class="shutter" onclick="takePhoto()">
+    <button class="shutter" onclick="takePhotoAsync()">
       <div class="shutter-inner"></div>
     </button>
     <button class="flip-btn" onclick="flipCam()">🔄</button>
@@ -810,6 +810,18 @@ function flipCam(){
   facingMode = facingMode === 'user' ? 'environment' : 'user';
   closeCamera();
   openCamera();
+}
+
+async function takePhotoAsync(){
+  const btn = document.getElementById ? document.querySelector('.shutter') : null;
+  if(btn) btn.style.opacity = '0.5';
+  // If address not yet fetched, try once more
+  if(gps && !gps.address){
+    const addr = await reverseGeocode(gps.lat, gps.lng);
+    if(addr){ gps.address = addr; }
+  }
+  takePhoto();
+  if(btn) btn.style.opacity = '1';
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineH){
