@@ -832,6 +832,10 @@ function showNotice(msg){
 
 // ── Camera ──
 async function openCamera(){
+  // Hide map when camera opens (Leaflet z-index conflict)
+  var mapWrap = document.getElementById('formMapWrap');
+  if(mapWrap) mapWrap.style.visibility = 'hidden';
+
   if(!gpsReady){
     const msg = gpsBlocked
       ? 'Location/GPS access is required.\n\nPlease allow location permission in your browser settings, then reload the page.'
@@ -853,6 +857,9 @@ async function openCamera(){
 function closeCamera(){
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   document.getElementById('camOverlay').classList.add('hidden');
+  // Show map again after camera closes
+  var mapWrap = document.getElementById('formMapWrap');
+  if(mapWrap) mapWrap.style.visibility = 'visible';
 }
 function flipCam(){
   facingMode = facingMode === 'user' ? 'environment' : 'user';
