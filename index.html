@@ -588,6 +588,13 @@ canvas{display:none}
 
   <div class="success-card">
     <img id="successImg" class="success-selfie hidden" alt="attendance selfie">
+  <div id="savePhotoTip" class="hidden" style="background:#fff3cd;border-top:1px solid #fde68a;padding:10px 16px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📸</span>
+    <p style="font-size:13px;font-weight:600;color:#92400e;margin:0;line-height:1.5">
+      Please <strong>save this photo</strong> to your gallery now for reference.<br>
+      <span style="font-weight:400;font-size:12px">Long press the photo → Save to Photos</span>
+    </p>
+  </div>
     <div class="success-info">
       <div class="info-row">
         <div class="info-icon">👤</div>
@@ -1006,6 +1013,7 @@ function showSuccess(r, timeStr){
     const img = document.getElementById('successImg');
     img.src = r.img;
     img.classList.remove('hidden');
+    document.getElementById('savePhotoTip').classList.remove('hidden');
   }
   document.getElementById('successOverlay').classList.remove('hidden');
 
@@ -1067,6 +1075,7 @@ function resetForm(){
   document.getElementById('submitBtn').innerHTML = '✅ &nbsp;Submit — Log In';
   document.getElementById('successOverlay').classList.add('hidden');
   document.getElementById('successImg').classList.add('hidden');
+  document.getElementById('savePhotoTip').classList.add('hidden');
   window.scrollTo(0,0);
 }
 
