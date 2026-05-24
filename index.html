@@ -548,12 +548,7 @@ canvas{display:none}
     </div>
   </div>
 
-  <!-- View Log link -->
-  <div style="text-align:center;padding:0 0 30px">
-    <button onclick="showLog()" style="background:none;border:none;color:var(--blue2);font-size:13px;font-weight:600;cursor:pointer;padding:8px">
-      📋 View Attendance Log
-    </button>
-  </div>
+
 </div>
 
 <!-- ── CAMERA ── -->
@@ -627,7 +622,7 @@ canvas{display:none}
 
   <div class="success-actions">
     <button class="btn-new" onclick="resetForm()">+ New Attendance</button>
-    <button class="btn-log" onclick="showLog()">📋 View Log</button>
+
   </div>
 </div>
 
@@ -1013,6 +1008,42 @@ function showSuccess(r, timeStr){
     img.classList.remove('hidden');
   }
   document.getElementById('successOverlay').classList.remove('hidden');
+
+  // Auto-prompt save photo
+  if(r.img){
+    setTimeout(()=>{ autoSavePhoto(r.img, r.name, r.ts); }, 800);
+  }
+}
+
+function autoSavePhoto(imgSrc, name, ts){
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(/Android/i.test(navigator.userAgent)){
+    // Android - trigger download to gallery
+    const a = document.createElement('a');
+    a.href = imgSrc;
+    const safe = (name||'employee').replace(/[^a-z0-9]/gi,'_');
+    const t = ts.replace(/[: ]/g,'-');
+    a.download = `attendance_${safe}_${t}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    // iOS/others - open in new tab for long-press save
+    const win = window.open('','_blank');
+    if(win){
+      win.document.write(`<!DOCTYPE html><html><head>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Attendance Photo</title>
+        <style>body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center}
+        img{max-width:100%;display:block}
+        .tip{color:#fff;font-family:sans-serif;font-size:15px;padding:16px;text-align:center;line-height:1.6}
+        .tip strong{color:#4ade80}</style></head><body>
+        <img src="${imgSrc}" alt="selfie">
+        <div class="tip">📥 Long press the photo<br>then tap <strong>Save to Photos</strong></div>
+        </body></html>`);
+      win.document.close();
+    }
+  }
 }
 
 // ── Reset form ──
