@@ -709,7 +709,8 @@ function showFormMap(lat, lng){
     map.setView([lat,lng],16);
     L.marker([lat,lng],{icon:icon}).addTo(map);
     window._formMap = map;
-  },200);
+    setTimeout(function(){ map.invalidateSize(); },100);
+  },300);
 }
 
 function startGPS(){
@@ -736,6 +737,8 @@ function startGPS(){
       // Remove GPS warning if shown
       const warn = document.getElementById('gpsWarn');
       if(warn) warn.style.display = 'none';
+      // Show mini map
+      showFormMap(gps.lat, gps.lng);
     },
     err => {
       gpsBlocked = true;
