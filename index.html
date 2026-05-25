@@ -601,15 +601,7 @@ canvas{display:none}
   </div>
 
   <div class="success-card">
-    <div id="downloadBtnWrap" class="hidden" style="padding:14px 16px">
-      <button onclick="downloadSuccessPhoto()"
-        style="width:100%;padding:15px;border-radius:12px;border:none;
-        background:#1e40af;color:#fff;font-size:16px;font-weight:700;
-        cursor:pointer;font-family:inherit;display:flex;align-items:center;
-        justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(30,64,175,0.3)">
-        ⬇️ &nbsp;Save / Download Photo
-      </button>
-    </div>
+
     <img id="successImg" class="success-selfie hidden" alt="attendance selfie">
     <div class="success-info">
       <div class="info-row">
@@ -1001,7 +993,7 @@ function takePhoto(){
   ctx.fillText('📍 ' + (empDest || '—'), nameX, Math.round(94*scale));
 
   // ── BOTTOM PANEL: Time + GPS ──
-  const botBarH = Math.round(100 * scale);
+  const botBarH = Math.round(130 * scale);
   ctx.fillStyle = 'rgba(0,0,0,0.82)';
   ctx.fillRect(0, H - botBarH, W, botBarH);
 
@@ -1093,20 +1085,6 @@ function showFormError(msg){
 }
 
 // ── Success screen ──
-function downloadSuccessPhoto(){
-  var img = document.getElementById('successImg');
-  if(!img || !img.src) return;
-  var a = document.createElement('a');
-  a.href = img.src;
-  var name = document.getElementById('si-name').textContent || 'employee';
-  var ts = document.getElementById('si-time').textContent || '';
-  var safe = name.replace(/[^a-z0-9]/gi,'_');
-  a.download = 'attendance_' + safe + '_' + new Date().getTime() + '.jpg';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
 function showSuccess(r, timeStr){
   const isIn = r.type === 'in';
   document.getElementById('successIcon').className = `success-icon-wrap ${r.type}`;
@@ -1126,7 +1104,6 @@ function showSuccess(r, timeStr){
     img.src = r.img;
     img.classList.remove('hidden');
     document.getElementById('savePhotoTip').classList.remove('hidden');
-    document.getElementById('downloadBtnWrap').classList.remove('hidden');
   }
   document.getElementById('successOverlay').classList.remove('hidden');
   // Hide form map — Leaflet z-index bleeds through
@@ -1165,7 +1142,6 @@ function resetForm(){
   if(fw) fw.style.visibility = 'visible';
   document.getElementById('successImg').classList.add('hidden');
   document.getElementById('savePhotoTip').classList.add('hidden');
-  document.getElementById('downloadBtnWrap').classList.add('hidden');
   
 
   window.scrollTo(0,0);
