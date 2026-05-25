@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Admin — Photoline</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#f0f4ff;min-height:100vh;color:#1e293b}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:20px}
+.login-card{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo h1{font-size:28px;font-weight:900;color:#1e40af}
+.login-logo p{font-size:13px;color:#64748b;margin-top:4px}
+.login-label{font-size:13px;font-weight:700;color:#374151;margin-bottom:6px;display:block}
+.login-input{width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;outline:none;transition:border .2s}
+.login-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+.login-btn{width:100%;padding:14px;margin-top:20px;background:#1e40af;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+.login-btn:hover{background:#2563eb}
+.login-error{color:#dc2626;font-size:13px;margin-top:10px;text-align:center;display:none}
+
+.app{display:none}
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-title h1{font-size:18px;font-weight:900;color:#1e40af}
+.topbar-title p{font-size:12px;color:#64748b}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.logout-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.refresh-btn{padding:8px 16px;border-radius:8px;border:none;background:#1e40af;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px}
+
+.container{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+.stat-card{background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid}
+@media(max-width:900px){#summaryGrid{grid-template-columns:repeat(3,1fr)!important}}
+@media(max-width:500px){#summaryGrid{grid-template-columns:repeat(2,1fr)!important}}
+.stat-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+.stat-value{font-size:22px;font-weight:900;color:#1e293b;margin-top:2px}
+.stat-sub{font-size:10px;color:#94a3b8;margin-top:2px}
+
+.filters{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;gap:12px;flex-wrap:wrap;align-items:center;border:1px solid #e2e8f0}
+.filter-input{padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;outline:none;transition:border .2s;min-width:160px;background:#fff;color:#1e293b}
+.filter-input:focus{border-color:#2563eb}
+.filter-select{padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;outline:none;background:#fff;cursor:pointer;color:#1e293b}
+.export-btn{padding:9px 18px;border-radius:8px;border:none;background:#16a34a;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px;margin-left:auto}
+
+.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e2e8f0}
+.table-header{padding:14px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+.table-header span{font-size:14px;font-weight:800;color:#1e293b}
+.record-count{font-size:12px;color:#64748b;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:12px 16px;text-align:left;font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+tbody tr:hover{background:#f8fafc}
+tbody tr:last-child{border-bottom:none}
+td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
+.photo-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid #e2e8f0;transition:transform .1s}
+.photo-thumb:hover{transform:scale(1.1)}
+.no-photo{width:48px;height:48px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:20px}
+.badge-in{display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#16a34a;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px}
+.badge-out{display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#dc2626;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px}
+.ts-cell{font-family:'Courier New',monospace;font-size:12px;color:#475569}
+.loading{text-align:center;padding:60px 20px;color:#64748b;font-size:14px}
+.loading .spinner{width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 20px;color:#94a3b8;font-size:14px}
+.empty .icon{font-size:48px;margin-bottom:12px}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:16px}
+.lightbox.open{display:flex}
+.lightbox img{max-width:100%;max-height:80vh;border-radius:12px;object-fit:contain}
+.lb-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lb-name{color:#fff;font-size:14px;font-weight:700;margin-top:8px}
+@media(max-width:768px){.table-wrap{overflow-x:auto}table{min-width:700px}.topbar{padding:12px 16px}.container{padding:16px 12px}}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Photoline</h1>
+      <p>Field Duty Timesheet — Admin</p>
+    </div>
+    <label class="login-label">Admin Password</label>
+    <input type="password" class="login-input" id="passInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
+    <div class="login-error" id="loginError">❌ Wrong password. Try again.</div>
+  </div>
+</div>
+
+<div class="app" id="appWrap">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">
+        <h1>Photoline Admin</h1>
+        <p>Field Duty Timesheet Dashboard</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Employee Summary -->
+    <div id="empSummary" style="display:none;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:42px;height:42px;background:#1e40af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff">👤</div>
+        <div>
+          <div id="empSummaryName" style="font-size:17px;font-weight:900;color:#1e293b"></div>
+          <div style="font-size:12px;color:#64748b">Employee Summary — based on search results</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px" id="summaryGrid"></div>
+    </div>
+
+    <!-- Filters Row 1 -->
+    <div class="filters">
+      <input type="text" class="filter-input" id="filterName" placeholder="🔍 Search name..." oninput="applyFilters()">
+      <input type="text" class="filter-input" id="filterDest" placeholder="📍 Search destination..." oninput="applyFilters()">
+      <select class="filter-select" id="filterType" onchange="applyFilters()">
+        <option value="">All Types</option>
+        <option value="Log In">✅ Log In</option>
+        <option value="Log Out">🚪 Log Out</option>
+      </select>
+    </div>
+
+    <!-- Filters Row 2 -->
+    <div class="filters" style="margin-top:-12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1">
+        <select class="filter-select" id="dateMode" onchange="toggleDateMode()" style="min-width:140px">
+          <option value="single">📅 Single Date</option>
+          <option value="range">📅 Date Range</option>
+        </select>
+        <input type="date" class="filter-input" id="filterDate" onchange="applyFilters()">
+        <span id="dateRangeSep" style="display:none;color:#94a3b8;font-size:13px;font-weight:600;padding:0 2px">→</span>
+        <input type="date" class="filter-input" id="filterDateTo" onchange="applyFilters()" style="display:none">
+        <button onclick="clearDates()" style="padding:9px 14px;border-radius:8px;border:none;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">🗑️ Clear</button>
+      </div>
+      <button class="export-btn" onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <span>Attendance Records</span>
+        <span class="record-count" id="recordCount">Loading...</span>
+      </div>
+      <div id="tableArea">
+        <div class="loading"><div class="spinner"></div>Loading records...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <img id="lbImg" alt="selfie" onclick="event.stopPropagation()">
+  <div class="lb-name" id="lbName"></div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc_AdLbsh7IrDhsXEhCagZSwJOmJEmTWdmYv_1zeqbFqLZTB3QgA799rrNgyKM8X7vsA/exec';
+const ADMIN_PASS = 'photoline2026';
+
+let allRecords = [];
+let filtered = [];
+
+function doLogin(){
+  const pass = document.getElementById('passInput').value;
+  if(pass === ADMIN_PASS){
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'block';
+    sessionStorage.setItem('adminAuth','1');
+    loadData();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('passInput').value = '';
+  }
+}
+function doLogout(){
+  sessionStorage.removeItem('adminAuth');
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('appWrap').style.display = 'none';
+  document.getElementById('passInput').value = '';
+}
+if(sessionStorage.getItem('adminAuth')){
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  loadData();
+}
+
+function loadData(){
+  document.getElementById('tableArea').innerHTML = '<div class="loading"><div class="spinner"></div>Loading records...</div>';
+  document.getElementById('recordCount').textContent = 'Loading...';
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => {
+      if(data.status === 'ok'){ allRecords = data.records.reverse(); applyFilters(); }
+    })
+    .catch(() => {
+      document.getElementById('tableArea').innerHTML = '<div class="empty"><div class="icon">⚠️</div>Failed to load. Check connection.</div>';
+    });
+}
+
+function formatTs(raw){
+  if(!raw) return '—';
+  var s = String(raw).trim().replace('T',' ').replace('Z','').replace(/\.\d+$/,'');
+  var parts = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  if(!parts) return s;
+  var h=parseInt(parts[4]), mi=parts[5], ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return parts[2]+'/'+parts[3]+'/'+parts[1]+' '+String(h).padStart(2,'0')+':'+mi+' '+ampm;
+}
+
+function getHour(ts){
+  if(!ts) return -1;
+  var s = String(ts).replace('T',' ').replace('Z','');
+  var m = s.match(/(\d{2}):(\d{2}):(\d{2})/);
+  return m ? parseInt(m[1]) + parseInt(m[2])/60 : -1;
+}
+
+function toggleDateMode(){
+  var mode = document.getElementById('dateMode').value;
+  document.getElementById('filterDateTo').style.display = mode==='range'?'block':'none';
+  document.getElementById('dateRangeSep').style.display = mode==='range'?'inline':'none';
+  if(mode!=='range') document.getElementById('filterDateTo').value = '';
+  applyFilters();
+}
+function clearDates(){
+  document.getElementById('filterDate').value = '';
+  document.getElementById('filterDateTo').value = '';
+  applyFilters();
+}
+
+function applyFilters(){
+  const name = document.getElementById('filterName').value.toLowerCase();
+  const dest = document.getElementById('filterDest').value.toLowerCase();
+  const type = document.getElementById('filterType').value;
+  const date = document.getElementById('filterDate').value;
+  const dateTo = document.getElementById('filterDateTo').value;
+  const mode = document.getElementById('dateMode').value;
+
+  filtered = allRecords.filter(r => {
+    const matchName = !name || (r.Name||'').toLowerCase().includes(name);
+    const matchDest = !dest || (r.Destination||'').toLowerCase().includes(dest);
+    const matchType = !type || r.Type === type;
+    var matchDate = true;
+    if(date && r.Timestamp){
+      var tsDate = String(r.Timestamp).replace('T',' ').replace('Z','').substring(0,10);
+      matchDate = mode==='range' && dateTo ? (tsDate>=date && tsDate<=dateTo) : tsDate===date;
+    }
+    return matchName && matchDest && matchType && matchDate;
+  });
+
+  renderTable();
+}
+
+function updateSummary(){
+  var name = document.getElementById('filterName').value.trim();
+  if(!name || filtered.length===0){ document.getElementById('empSummary').style.display='none'; return; }
+  var nameMap = {};
+  filtered.forEach(function(r){ var k=(r.Name||'').toLowerCase().trim(); if(!nameMap[k]) nameMap[k]=r.Name||''; });
+  var keys = Object.keys(nameMap);
+  if(keys.length>1){ document.getElementById('empSummary').style.display='none'; return; }
+
+  var recs = filtered;
+  var empName = nameMap[keys[0]]||keys[0];
+  var dates = new Set(recs.map(r => String(r.Timestamp||'').substring(0,10)));
+  var locs = new Set(recs.map(r => (r.Destination||'').trim()).filter(Boolean));
+  var dayLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=7&&h<18; }).length;
+  var eveningLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=18&&h<22; }).length;
+  var otLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=22.017||(h>=0&&h<7); }).length;
+
+  document.getElementById('empSummaryName').textContent = empName;
+  var cards = [
+    {label:'Total Days',    value:dates.size,    sub:'Unique working days', color:'#2563eb'},
+    {label:'Total Records', value:recs.length,   sub:'Log In + Log Out',   color:'#7c3aed'},
+    {label:'Locations',     value:locs.size,     sub:'Unique destinations', color:'#0891b2'},
+    {label:'Day Logs',      value:dayLogs,       sub:'7:00 AM – 5:59 PM',  color:'#16a34a'},
+    {label:'Evening Logs',  value:eveningLogs,   sub:'6:00 PM – 10:00 PM', color:'#d97706'},
+    {label:'Overtime Logs', value:otLogs,        sub:'10:01 PM – 6:59 AM', color:'#dc2626'},
+  ];
+  document.getElementById('summaryGrid').innerHTML = cards.map(c =>
+    `<div class="stat-card" style="border-color:${c.color}">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-value" style="color:${c.color}">${c.value}</div>
+      <div class="stat-sub">${c.sub}</div>
+    </div>`
+  ).join('');
+  document.getElementById('empSummary').style.display = 'block';
+}
+
+function renderTable(){
+  document.getElementById('recordCount').textContent = filtered.length + ' record' + (filtered.length!==1?'s':'');
+  updateSummary();
+
+  if(!filtered.length){
+    document.getElementById('tableArea').innerHTML = '<div class="empty"><div class="icon">📋</div>No records found.</div>';
+    return;
+  }
+
+  const rows = filtered.map(r => {
+    const isIn = r.Type === 'Log In';
+    const badge = isIn ? '<span class="badge-in">✅ Log In</span>' : '<span class="badge-out">🚪 Log Out</span>';
+    var thumbUrl='', fullUrl=r['Photo Link']||'';
+    if(fullUrl.includes('id=')){
+      var fid=fullUrl.split('id=')[1];
+      thumbUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w120';
+      fullUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w800';
+    }
+    const photo = thumbUrl
+      ? `<img src="${thumbUrl}" class="photo-thumb" alt="selfie"
+           onerror="this.style.display='none';this.nextSibling.style.display='flex'"
+           onclick="openLightbox('${fullUrl}','${(r.Name||'').replace(/'/g,'')}')">
+         <div class="no-photo" style="display:none">👤</div>`
+      : '<div class="no-photo">👤</div>';
+    const lat=r.Latitude||'', lng=r.Longitude||'';
+    return `<tr>
+      <td>${photo}</td>
+      <td><strong>${r.Name||'—'}</strong></td>
+      <td>${r.Destination||'—'}</td>
+      <td>${badge}</td>
+      <td class="ts-cell">${formatTs(r.Timestamp)}</td>
+      <td>${lat&&lng
+        ? `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
+             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px;line-height:1.4">
+             <span>📍</span><span style="word-break:break-word">${r.Address||lat+', '+lng}</span></a>`
+        : `<span style="color:#94a3b8;font-size:12px">${r.Address||'No GPS'}</span>`}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableArea').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Photo</th><th>Name</th><th>Destination</th>
+        <th>Type</th><th>Timestamp</th><th>Address / Location</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function openLightbox(src, name){
+  document.getElementById('lbImg').src = src;
+  document.getElementById('lbName').textContent = name;
+  document.getElementById('lbImg').onerror = function(){ this.alt='Image unavailable'; };
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lbImg').src='';
+}
+
+function exportCSV(){
+  if(!filtered.length){ alert('No records to export.'); return; }
+  const headers=['Name','Destination','Type','Timestamp','Address','Latitude','Longitude','Photo Link'];
+  const rows=[headers,...filtered.map(r=>headers.map(h=>'"'+(r[h]||'')+'"'))];
+  const csv=rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='attendance_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
