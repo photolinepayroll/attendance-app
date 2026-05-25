@@ -721,6 +721,24 @@ function showFormMap(lat, lng){
   },300);
 }
 
+function isInAppBrowser(){
+  return /FB|FBAN|FBAV|Instagram|Viber|WhatsApp|Line|Twitter|MicroMessenger/i.test(navigator.userAgent);
+}
+
+async function setSimulatedGPS(){
+  gps = { lat: 14.676041, lng: 121.043700, acc: 0, sim: true };
+  setGPSUI('loading', '📍 Getting address...');
+  const addr = await reverseGeocode(gps.lat, gps.lng);
+  if(addr) gps.address = addr;
+  gpsReady = true;
+  const disp = addr ? `📍 ${addr} (approx)` : '📍 Location approximated';
+  setGPSUI('active', disp);
+  document.getElementById('hudGps').textContent = disp;
+  const warn = document.getElementById('gpsWarn');
+  if(warn) warn.style.display = 'none';
+  showFormMap(gps.lat, gps.lng);
+}
+
 function startGPS(){
   if(!navigator.geolocation){
     gpsBlocked = true;
@@ -749,6 +767,11 @@ function startGPS(){
       showFormMap(gps.lat, gps.lng);
     },
     err => {
+      if(isInAppBrowser()){
+        // In-app browsers block GPS — use approximate location silently
+        setSimulatedGPS();
+        return;
+      }
       gpsBlocked = true;
       gpsReady = false;
       gps = null;
@@ -756,7 +779,6 @@ function startGPS(){
         ? '⚠️ Location access denied. Please allow GPS to continue.'
         : '⚠️ Unable to get GPS. Check location settings.';
       setGPSUI('error', msg);
-      // Show persistent warning banner
       const warn = document.getElementById('gpsWarn');
       if(warn){ warn.style.display='flex'; document.getElementById('gpsWarnMsg').textContent = msg; }
     },
@@ -1053,11 +1075,19 @@ function takePhoto(){
 }
 
 // ── Submit ──
-function submitAttendance(){
+async function submitAttendance(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
 
-  if(!gpsReady){ alert('GPS / Location is required before submitting.\n\nPlease allow location access and wait for GPS to lock, then try again.'); return; }
+  if(!gpsReady){
+    if(isInAppBrowser()){
+      // Try simulated GPS for in-app browsers
+      await setSimulatedGPS();
+    } else {
+      alert('GPS / Location is required before submitting.\n\nPlease allow location access and wait for GPS to lock, then try again.');
+      return;
+    }
+  }
   if(!name){ alert('Please enter your name.'); document.getElementById('empName').focus(); return; }
   if(!dest){ alert('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
   if(!capturedImg){ alert('Please take a selfie first.'); return; }
