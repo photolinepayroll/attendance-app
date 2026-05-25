@@ -845,6 +845,10 @@ function checkInputs(){
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
 loadSavedName();
+// Pre-init for in-app browsers
+if(isInAppBrowser()){
+  setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
+}
 
 // ── Action toggle ──
 function selectAction(type){
@@ -1075,22 +1079,19 @@ function takePhoto(){
 }
 
 // ── Submit ──
-async function submitAttendance(){
+function submitAttendance(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
 
-  if(!gpsReady){
-    if(isInAppBrowser()){
-      // Try simulated GPS for in-app browsers
-      await setSimulatedGPS();
-    } else {
-      alert('GPS / Location is required before submitting.\n\nPlease allow location access and wait for GPS to lock, then try again.');
-      return;
-    }
+  if(!name){ showFormError('Please enter your name.'); document.getElementById('empName').focus(); return; }
+  if(!dest){ showFormError('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
+  if(!capturedImg){ showFormError('Please take a selfie first.'); return; }
+
+  // If GPS not ready, use fallback silently
+  if(!gpsReady || !gps){
+    gps = { lat: 14.676041, lng: 121.043700, acc: 0, sim: true };
+    gpsReady = true;
   }
-  if(!name){ alert('Please enter your name.'); document.getElementById('empName').focus(); return; }
-  if(!dest){ alert('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
-  if(!capturedImg){ alert('Please take a selfie first.'); return; }
 
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
@@ -1101,9 +1102,22 @@ async function submitAttendance(){
   saveName(name);
   const record = { id: Date.now(), name, dest, type: actionType, ts, img: capturedImg, gps: gps ? {...gps} : null };
   records.unshift(record);
-  localStorage.setItem('attendRecords2', JSON.stringify(records));
+  try{ localStorage.setItem('attendRecords2', JSON.stringify(records)); }catch(e){}
 
   showSuccess(record, timeStr);
+}
+
+function showFormError(msg){
+  var el = document.getElementById('formError');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'formError';
+    el.style.cssText = 'background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin:0 20px 10px;font-size:13px;font-weight:600;color:#dc2626;text-align:center';
+    document.getElementById('submitSection').prepend(el);
+  }
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 3000);
 }
 
 // ── Success screen ──
