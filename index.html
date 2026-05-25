@@ -1042,7 +1042,43 @@ function submitAttendance(){
   records.unshift(record);
   try{ localStorage.setItem('attendRecords2', JSON.stringify(records)); }catch(e){}
 
-  showSuccess(record, timeStr);
+  // Show loading
+  const btn = document.getElementById('submitBtn');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ &nbsp;Saving...';
+  btn.disabled = true;
+
+  // Send to Google Sheets + Drive
+  const payload = {
+    name: name,
+    dest: dest,
+    type: actionType,
+    ts: ts,
+    address: gps && gps.address ? gps.address : '',
+    lat: gps ? gps.lat.toFixed(6) : '',
+    lng: gps ? gps.lng.toFixed(6) : '',
+    photo: capturedImg
+  };
+
+  fetch('https://script.google.com/macros/s/AKfycbxc_AdLbsh7IrDhsXEhCagZSwJOmJEmTWdmYv_1zeqbFqLZTB3QgA799rrNgyKM8X7vsA/exec', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    btn.innerHTML = origText;
+    btn.disabled = false;
+    if(data.status === 'success'){
+      record.serverTs = data.serverTs;
+    }
+    showSuccess(record, timeStr);
+  })
+  .catch(function(err){
+    // Still show success even if network fails
+    btn.innerHTML = origText;
+    btn.disabled = false;
+    showSuccess(record, timeStr);
+  });
 }
 
 function showFormError(msg){
