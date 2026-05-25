@@ -485,6 +485,17 @@ canvas{display:none}
     </p>
   </div>
 
+  <!-- In-app browser warning -->
+  <div id="inAppWarn" style="display:none;background:#1e40af;padding:12px 16px;margin:0;display:flex;align-items:center;gap:10px">
+    <span style="font-size:22px;flex-shrink:0">⚠️</span>
+    <div>
+      <p style="font-size:13px;font-weight:700;color:#fff;margin:0">Hindi gumagana sa Messenger/Viber!</p>
+      <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:4px 0 0">
+        I-tap ang <strong>⋮ o ··· → Open in Chrome/Safari</strong> para gumana ang app.
+      </p>
+    </div>
+  </div>
+
   <div class="gps-warn" id="gpsWarn">
     <div class="gps-warn-icon">📵</div>
     <div>
@@ -520,10 +531,10 @@ canvas{display:none}
     <div class="action-row">
       <div class="section-label">🕐 Action</div>
       <div class="toggle-group">
-        <button class="toggle-btn selected-in" id="btnIn" id-action="in" disabled>
+        <button class="toggle-btn selected-in" id="btnIn" onclick="selectAction('in')" disabled>
           ✅ &nbsp;Log In
         </button>
-        <button class="toggle-btn" id="btnOut" id-action="out" disabled>
+        <button class="toggle-btn" id="btnOut" onclick="selectAction('out')" disabled>
           🚪 &nbsp;Log Out
         </button>
       </div>
@@ -547,7 +558,7 @@ canvas{display:none}
 
     <!-- Submit — hidden until action selected -->
     <div class="submit-section" id="submitSection" style="display:none">
-      <button class="submit-btn" id="submitBtn">
+      <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">
         ✅ &nbsp;Submit Attendance
       </button>
     </div>
@@ -600,6 +611,15 @@ canvas{display:none}
 
   <div class="success-card">
     <img id="successImg" class="success-selfie hidden" alt="attendance selfie">
+  <div id="downloadBtnWrap" class="hidden" style="padding:12px 16px;border-top:1px solid var(--gray3)">
+    <button id="downloadPhotoBtn" onclick="downloadSuccessPhoto()"
+      style="width:100%;padding:14px;border-radius:12px;border:none;
+      background:#1e40af;color:#fff;font-size:15px;font-weight:700;
+      cursor:pointer;font-family:inherit;display:flex;align-items:center;
+      justify-content:center;gap:8px">
+      ⬇️ &nbsp;Save / Download Photo
+    </button>
+  </div>
     <div class="success-info">
       <div class="info-row">
         <div class="info-icon">👤</div>
@@ -794,37 +814,14 @@ function checkInputs(){
 }
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
-// Pre-init for in-app browsers
+// Show warning if in-app browser
 if(isInAppBrowser()){
+  var inAppWarn = document.getElementById('inAppWarn');
+  if(inAppWarn) inAppWarn.style.display = 'flex';
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
 }
 
-// Use addEventListener for reliability in in-app browsers
-document.addEventListener('DOMContentLoaded', function(){});
 
-var submitBtn = document.getElementById('submitBtn');
-if(submitBtn){
-  submitBtn.addEventListener('click', function(e){
-    e.preventDefault();
-    submitAttendance();
-  });
-  submitBtn.addEventListener('touchend', function(e){
-    e.preventDefault();
-    submitAttendance();
-  });
-}
-
-var btnIn = document.getElementById('btnIn');
-if(btnIn){
-  btnIn.addEventListener('click', function(e){ e.preventDefault(); selectAction('in'); });
-  btnIn.addEventListener('touchend', function(e){ e.preventDefault(); selectAction('in'); });
-}
-
-var btnOut = document.getElementById('btnOut');
-if(btnOut){
-  btnOut.addEventListener('click', function(e){ e.preventDefault(); selectAction('out'); });
-  btnOut.addEventListener('touchend', function(e){ e.preventDefault(); selectAction('out'); });
-}
 
 // ── Action toggle ──
 function selectAction(type){
@@ -1096,6 +1093,20 @@ function showFormError(msg){
 }
 
 // ── Success screen ──
+function downloadSuccessPhoto(){
+  var img = document.getElementById('successImg');
+  if(!img || !img.src) return;
+  var a = document.createElement('a');
+  a.href = img.src;
+  var name = document.getElementById('si-name').textContent || 'employee';
+  var ts = document.getElementById('si-time').textContent || '';
+  var safe = name.replace(/[^a-z0-9]/gi,'_');
+  a.download = 'attendance_' + safe + '_' + new Date().getTime() + '.jpg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 function showSuccess(r, timeStr){
   const isIn = r.type === 'in';
   document.getElementById('successIcon').className = `success-icon-wrap ${r.type}`;
@@ -1115,6 +1126,7 @@ function showSuccess(r, timeStr){
     img.src = r.img;
     img.classList.remove('hidden');
     document.getElementById('savePhotoTip').classList.remove('hidden');
+    document.getElementById('downloadBtnWrap').classList.remove('hidden');
   }
   document.getElementById('successOverlay').classList.remove('hidden');
   // Hide form map — Leaflet z-index bleeds through
@@ -1153,6 +1165,7 @@ function resetForm(){
   if(fw) fw.style.visibility = 'visible';
   document.getElementById('successImg').classList.add('hidden');
   document.getElementById('savePhotoTip').classList.add('hidden');
+  document.getElementById('downloadBtnWrap').classList.add('hidden');
   
 
   window.scrollTo(0,0);
