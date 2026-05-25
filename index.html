@@ -881,6 +881,7 @@ function showNotice(msg){
 
 // ── Camera ──
 async function openCamera(){
+  clearPhotoTimer();
   // Hide map when camera opens (Leaflet z-index conflict)
   var mapWrap = document.getElementById('formMapWrap');
   if(mapWrap) mapWrap.style.visibility = 'hidden';
@@ -1061,13 +1062,77 @@ function takePhoto(){
   document.getElementById('camBtnTxt').textContent = '🔄  Retake Selfie';
 
   closeCamera();
+  startPhotoTimer();
 }
 
 // ── Submit ──
+// ── Photo expiration timer ──
+var photoTimer = null;
+var photoExpired = false;
+
+function startPhotoTimer(){
+  clearPhotoTimer();
+  photoExpired = false;
+  var seconds = 10;
+  var btn = document.getElementById('submitBtn');
+  var orig = btn.innerHTML;
+
+  photoTimer = setInterval(function(){
+    seconds--;
+    if(seconds > 0){
+      btn.innerHTML = (actionType==='in'?'✅':'🚪') + ' &nbsp;Submit — ' + (actionType==='in'?'Log In':'Log Out') + ' <span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:13px;margin-left:6px">⏱ ' + seconds + 's</span>';
+      btn.style.background = seconds <= 3 ? '#dc2626' : '#2563eb';
+    } else {
+      clearPhotoTimer();
+      photoExpired = true;
+      expirePhoto();
+    }
+  }, 1000);
+
+  // Update immediately
+  btn.innerHTML = (actionType==='in'?'✅':'🚪') + ' &nbsp;Submit — ' + (actionType==='in'?'Log In':'Log Out') + ' <span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:13px;margin-left:6px">⏱ ' + seconds + 's</span>';
+}
+
+function clearPhotoTimer(){
+  if(photoTimer){ clearInterval(photoTimer); photoTimer=null; }
+  var btn = document.getElementById('submitBtn');
+  if(btn){
+    btn.style.background = '';
+    btn.innerHTML = (actionType==='in'?'✅':'🚪') + ' &nbsp;Submit — ' + (actionType==='in'?'Log In':'Log Out');
+  }
+}
+
+function expirePhoto(){
+  // Clear photo
+  capturedImg = null;
+  var img = document.getElementById('previewImg');
+  img.style.display = 'none';
+  img.src = '';
+  document.getElementById('selfieEmpty').style.display = 'flex';
+  document.getElementById('selfieBox').classList.remove('has-photo');
+  document.getElementById('camBtnTxt').textContent = '📷  Open Camera';
+
+  // Show expired message
+  var btn = document.getElementById('submitBtn');
+  btn.innerHTML = '⚠️ &nbsp;Photo Expired — Retake Selfie';
+  btn.style.background = '#dc2626';
+  btn.disabled = true;
+
+  showFormError('⏱ Photo expired! Please take a new selfie.');
+
+  // Re-enable submit after 2 seconds
+  setTimeout(function(){
+    btn.disabled = false;
+    btn.style.background = '';
+    btn.innerHTML = (actionType==='in'?'✅':'🚪') + ' &nbsp;Submit — ' + (actionType==='in'?'Log In':'Log Out');
+  }, 2000);
+}
+
 function submitAttendance(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
 
+  if(photoExpired){ showFormError('⏱ Photo expired! Please take a new selfie.'); return; }
   if(!name){ showFormError('Please enter your name.'); document.getElementById('empName').focus(); return; }
   if(!dest){ showFormError('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
   if(!capturedImg){ showFormError('Please take a selfie first.'); return; }
@@ -1177,6 +1242,7 @@ function showSuccess(r, timeStr){
 // ── Reset form ──
 function resetForm(){
   // Keep saved name on reset
+  clearPhotoTimer();
   if(!localStorage.getItem('empSavedName')){
     document.getElementById('empName').value = '';
   }
