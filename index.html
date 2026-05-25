@@ -267,19 +267,16 @@ html,body{
   background:#f0f4ff;
   display:flex;flex-direction:column;
   align-items:center;padding:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
 }
 .success-overlay.hidden{display:none}
 .success-header{
-  width:100%;padding:24px 20px 16px;
+  width:100%;padding:60px 30px 30px;
   display:flex;flex-direction:column;align-items:center;
-  flex-shrink:0;
 }
 .success-icon-wrap{
-  width:60px;height:60px;border-radius:50%;
+  width:80px;height:80px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:30px;margin-bottom:10px;
+  font-size:40px;margin-bottom:16px;
 }
 .success-icon-wrap.in{background:var(--greenbg);border:3px solid var(--green)}
 .success-icon-wrap.out{background:var(--redbg);border:3px solid var(--red)}
@@ -292,9 +289,10 @@ html,body{
   background:#fff;border-radius:var(--radius);
   box-shadow:var(--shadow);
   margin:0 16px;width:calc(100% - 32px);
+  overflow:hidden;
 }
 .success-selfie{
-  width:100%;height:auto;object-fit:contain;display:block;background:#000;border-radius:var(--radius);
+  width:100%;aspect-ratio:4/3;object-fit:cover;display:block;
 }
 .success-selfie.hidden{display:none}
 .success-info{padding:16px 18px}
@@ -308,8 +306,8 @@ html,body{
 .info-value{font-size:13px;color:var(--text);font-weight:500;margin-top:1px}
 
 .success-actions{
-  padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;
-  margin:0 16px;width:calc(100% - 32px);
+  padding:16px;display:flex;flex-direction:column;gap:10px;
+  margin:0 16px;
 }
 .btn-new{
   width:100%;padding:14px;border-radius:var(--radius-sm);
@@ -487,6 +485,17 @@ canvas{display:none}
     </p>
   </div>
 
+  <!-- In-app browser warning -->
+  <div id="inAppWarn" style="display:none;background:#1e40af;padding:12px 16px;margin:0;display:flex;align-items:center;gap:10px">
+    <span style="font-size:22px;flex-shrink:0">⚠️</span>
+    <div>
+      <p style="font-size:13px;font-weight:700;color:#fff;margin:0">Hindi gumagana sa Messenger/Viber!</p>
+      <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:4px 0 0">
+        I-tap ang <strong>⋮ o ··· → Open in Chrome/Safari</strong> para gumana ang app.
+      </p>
+    </div>
+  </div>
+
   <div class="gps-warn" id="gpsWarn">
     <div class="gps-warn-icon">📵</div>
     <div>
@@ -591,24 +600,56 @@ canvas{display:none}
     <div class="success-icon-wrap" id="successIcon"></div>
     <div class="success-title" id="successTitle"></div>
     <div class="success-sub" id="successSub"></div>
-    <div id="savePhotoTip" class="hidden" style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin:10px 20px 0;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">📲</span>
-      <p style="font-size:13px;font-weight:700;color:#1e40af;margin:0;line-height:1.5">
-        Take a <strong>screenshot</strong> to save<br>
-        <span style="font-weight:500;font-size:12px;color:#2563eb">your attendance photo for reference</span>
+    <div id="savePhotoTip" class="hidden" style="background:#fff3cd;border:1.5px solid #fde68a;border-radius:10px;padding:10px 16px;margin:10px 20px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">📥</span>
+      <p style="font-size:12px;font-weight:700;color:#92400e;margin:0;line-height:1.5">
+        Long press the photo below<br>
+        <span style="font-weight:500;color:#b45309">then tap <strong>"Save to Photos"</strong> or <strong>"Download"</strong></span>
       </p>
     </div>
   </div>
 
   <div class="success-card">
-
+    <div id="downloadBtnWrap" class="hidden" style="padding:14px 16px">
+      <button onclick="downloadSuccessPhoto()"
+        style="width:100%;padding:15px;border-radius:12px;border:none;
+        background:#1e40af;color:#fff;font-size:16px;font-weight:700;
+        cursor:pointer;font-family:inherit;display:flex;align-items:center;
+        justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(30,64,175,0.3)">
+        ⬇️ &nbsp;Save / Download Photo
+      </button>
+    </div>
     <img id="successImg" class="success-selfie hidden" alt="attendance selfie">
-    <!-- Hidden elements needed by JS -->
-    <span id="si-name" style="display:none"></span>
-    <span id="si-dest" style="display:none"></span>
-    <span id="si-time" style="display:none"></span>
-    <span id="si-gps" style="display:none"></span>
-
+    <div class="success-info">
+      <div class="info-row">
+        <div class="info-icon">👤</div>
+        <div>
+          <div class="info-label">Employee</div>
+          <div class="info-value" id="si-name">—</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">📍</div>
+        <div>
+          <div class="info-label">Destination</div>
+          <div class="info-value" id="si-dest">—</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">🕐</div>
+        <div>
+          <div class="info-label">Time</div>
+          <div class="info-value" id="si-time">—</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">🛰️</div>
+        <div>
+          <div class="info-label">GPS Coordinates</div>
+          <div class="info-value" id="si-gps">—</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="success-actions">
@@ -773,8 +814,10 @@ function checkInputs(){
 }
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
-// Pre-init GPS for in-app browsers
+// Show warning if in-app browser
 if(isInAppBrowser()){
+  var inAppWarn = document.getElementById('inAppWarn');
+  if(inAppWarn) inAppWarn.style.display = 'flex';
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
 }
 
@@ -916,20 +959,34 @@ function takePhoto(){
   const W = canvas.width, H = canvas.height;
   const scale = W / 400; // normalize to 400px base
 
-  // ── TOP BAR: Name + Destination + Badge ──
-  const topBarH = Math.round(80 * scale);
-  ctx.fillStyle = 'rgba(0,0,0,0.78)';
+  // ── TOP BAR: Big Date + Name + Destination + Badge ──
+  const pad2 = n => String(n).padStart(2,'0');
+  const d = new Date();
+  const days2=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months2=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const bigDate = pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + '/' + d.getFullYear();
+
+  const topBarH = Math.round(120 * scale);
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
   ctx.fillRect(0, 0, W, topBarH);
 
-  // LOG IN / LOG OUT badge (top right)
+  // BIG DATE — centered, yellow
+  const bigDateFs = Math.round(22 * scale);
+  ctx.font = 'bold ' + bigDateFs + 'px -apple-system,sans-serif';
+  ctx.fillStyle = '#facc15';
+  ctx.textAlign = 'center';
+  ctx.fillText(bigDate, W/2, Math.round(30*scale));
+  ctx.textAlign = 'left';
+
+  // LOG IN / LOG OUT badge
   const badgeLabel = actionType === 'in' ? 'LOG IN' : 'LOG OUT';
   const badgeColor = actionType === 'in' ? '#16a34a' : '#dc2626';
   const bFs = Math.round(13 * scale);
-  ctx.font = `bold ${bFs}px -apple-system,sans-serif`;
+  ctx.font = 'bold ' + bFs + 'px -apple-system,sans-serif';
   const bW = ctx.measureText(badgeLabel).width + Math.round(20*scale);
   const bH = Math.round(26*scale);
   const bX = W - bW - Math.round(12*scale);
-  const bY = Math.round(12*scale);
+  const bY = Math.round(46*scale);
   ctx.fillStyle = badgeColor;
   ctx.beginPath();
   ctx.roundRect(bX, bY, bW, bH, 6);
@@ -939,30 +996,27 @@ function takePhoto(){
   ctx.fillText(badgeLabel, bX + bW/2, bY + bH/2 + bFs*0.36);
   ctx.textAlign = 'left';
 
-  // Employee name (large, white)
+  // Employee name
   const empName = document.getElementById('empName').value.trim();
   const empDest = document.getElementById('empDest').value.trim();
   const nameFs = Math.round(20 * scale);
-  ctx.font = `bold ${nameFs}px -apple-system,sans-serif`;
+  ctx.font = 'bold ' + nameFs + 'px -apple-system,sans-serif';
   ctx.fillStyle = '#ffffff';
   const nameX = Math.round(14*scale);
-  ctx.fillText(empName || 'Employee', nameX, Math.round(32*scale));
+  ctx.fillText(empName || 'Employee', nameX, Math.round(70*scale));
 
-  // Destination below name (smaller, light blue)
+  // Destination
   const destFs = Math.round(13 * scale);
-  ctx.font = `${destFs}px -apple-system,sans-serif`;
+  ctx.font = destFs + 'px -apple-system,sans-serif';
   ctx.fillStyle = '#93c5fd';
-  ctx.fillText('📍 ' + (empDest || '—'), nameX, Math.round(54*scale));
+  ctx.fillText('📍 ' + (empDest || '—'), nameX, Math.round(94*scale));
 
   // ── BOTTOM PANEL: Time + GPS ──
   const botBarH = Math.round(100 * scale);
   ctx.fillStyle = 'rgba(0,0,0,0.82)';
   ctx.fillRect(0, H - botBarH, W, botBarH);
 
-  const pad2 = n => String(n).padStart(2,'0');
-  const d = new Date();
-  const days2=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const dateStr = `${days2[d.getDay()]} ${pad2(d.getMonth()+1)}/${pad2(d.getDate())}/${d.getFullYear()}`;
+  const dateStr = days2[d.getDay()] + ' ' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + '/' + d.getFullYear();
   let hr = d.getHours(), mn = d.getMinutes(), sc = d.getSeconds();
   const ampm = hr >= 12 ? 'PM' : 'AM';
   hr = hr % 12 || 12;
@@ -1050,6 +1104,20 @@ function showFormError(msg){
 }
 
 // ── Success screen ──
+function downloadSuccessPhoto(){
+  var img = document.getElementById('successImg');
+  if(!img || !img.src) return;
+  var a = document.createElement('a');
+  a.href = img.src;
+  var name = document.getElementById('si-name').textContent || 'employee';
+  var ts = document.getElementById('si-time').textContent || '';
+  var safe = name.replace(/[^a-z0-9]/gi,'_');
+  a.download = 'attendance_' + safe + '_' + new Date().getTime() + '.jpg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 function showSuccess(r, timeStr){
   const isIn = r.type === 'in';
   document.getElementById('successIcon').className = `success-icon-wrap ${r.type}`;
@@ -1069,6 +1137,7 @@ function showSuccess(r, timeStr){
     img.src = r.img;
     img.classList.remove('hidden');
     document.getElementById('savePhotoTip').classList.remove('hidden');
+    document.getElementById('downloadBtnWrap').classList.remove('hidden');
   }
   document.getElementById('successOverlay').classList.remove('hidden');
   // Hide form map — Leaflet z-index bleeds through
@@ -1107,6 +1176,7 @@ function resetForm(){
   if(fw) fw.style.visibility = 'visible';
   document.getElementById('successImg').classList.add('hidden');
   document.getElementById('savePhotoTip').classList.add('hidden');
+  document.getElementById('downloadBtnWrap').classList.add('hidden');
   
 
   window.scrollTo(0,0);
