@@ -217,7 +217,7 @@ html,body{
   color:#fff;font-size:20px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
 }
-#camVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#camVideo{width:100%;height:100%;object-fit:cover;transition:transform .1s}
 
 .cam-hud{position:absolute;inset:0;pointer-events:none}
 .hud-corners .c{
@@ -854,6 +854,8 @@ async function openCamera(){
       video:{ facingMode, width:{ideal:1080}, height:{ideal:1080} }, audio:false
     });
     document.getElementById('camVideo').srcObject = camStream;
+    // Mirror only for front camera
+    document.getElementById('camVideo').style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
   } catch(e){
     closeCamera();
     alert('Camera permission denied.\n\nPlease allow camera access in your browser settings.');
@@ -868,7 +870,7 @@ function closeCamera(){
 }
 function flipCam(){
   facingMode = facingMode === 'user' ? 'environment' : 'user';
-  closeCamera();
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   openCamera();
 }
 
@@ -1101,7 +1103,7 @@ function showSuccess(r, timeStr){
   document.getElementById('successIcon').textContent = isIn ? '✅' : '🚪';
   document.getElementById('successTitle').className = `success-title ${r.type}`;
   document.getElementById('successTitle').textContent = isIn ? 'Logged In!' : 'Logged Out!';
-  document.getElementById('successSub').textContent = isIn ? 'Attendance recorded successfully.' : '';
+  document.getElementById('successSub').textContent = isIn ? 'Attendance recorded successfully.' : 'Have a safe trip home!';
   document.getElementById('si-name').textContent = r.name;
   document.getElementById('si-dest').textContent = r.dest;
   document.getElementById('si-time').textContent = timeStr;
