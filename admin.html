@@ -353,10 +353,32 @@ function closeLightbox(){
   document.getElementById('lbImg').src='';
 }
 
+function splitTs(raw){
+  var f = formatTs(raw);
+  if(!f || f==='—') return {date:'',time:''};
+  var parts = f.split(' ');
+  // parts: ['05/26/2026', '12:47', 'AM']
+  return { date: parts[0]||'', time: (parts[1]||'')+' '+(parts[2]||'') };
+}
 function exportCSV(){
   if(!filtered.length){ alert('No records to export.'); return; }
-  const headers=['Name','Destination','Type','Timestamp','Address','Latitude','Longitude','Photo Link'];
-  const rows=[headers,...filtered.map(r=>headers.map(h=>'"'+(r[h]||'')+'"'))];
+  const exportHeaders=['Name','Destination','Date','Type','Time','Address','Photo Link'];
+  const rows=[
+    exportHeaders,
+    ...filtered.map(r=>{
+      var ts = splitTs(r.Timestamp);
+      var type = r.Type==='Log In'?'IN':r.Type==='Log Out'?'OUT':r.Type||'';
+      return [
+        '"'+(r.Name||'')+'"',
+        '"'+(r.Destination||'')+'"',
+        '"'+ts.date+'"',
+        '"'+type+'"',
+        '"'+ts.time.trim()+'"',
+        '"'+(r.Address||'')+'"',
+        '"'+(r['Photo Link']||'')+'"',
+      ];
+    })
+  ];
   const csv=rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
