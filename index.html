@@ -1133,6 +1133,7 @@ function submitAttendance(){
   const dest = document.getElementById('empDest').value.trim();
 
   if(photoExpired){ showFormError('⏱ Photo expired! Please take a new selfie.'); return; }
+  clearPhotoTimer(); // Stop countdown immediately on submit
   if(!name){ showFormError('Please enter your name.'); document.getElementById('empName').focus(); return; }
   if(!dest){ showFormError('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
   if(!capturedImg){ showFormError('Please take a selfie first.'); return; }
