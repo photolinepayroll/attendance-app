@@ -528,10 +528,10 @@ canvas{display:none}
     <div class="action-row">
       <div class="section-label">🕐 Action</div>
       <div class="toggle-group">
-        <button class="toggle-btn selected-in" id="btnIn" onclick="selectAction('in')" disabled>
+        <button class="toggle-btn selected-in" id="btnIn" id-action="in" disabled>
           ✅ &nbsp;Log In
         </button>
-        <button class="toggle-btn" id="btnOut" onclick="selectAction('out')" disabled>
+        <button class="toggle-btn" id="btnOut" id-action="out" disabled>
           🚪 &nbsp;Log Out
         </button>
       </div>
@@ -555,7 +555,7 @@ canvas{display:none}
 
     <!-- Submit — hidden until action selected -->
     <div class="submit-section" id="submitSection" style="display:none">
-      <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">
+      <button class="submit-btn" id="submitBtn">
         ✅ &nbsp;Submit Attendance
       </button>
     </div>
@@ -848,6 +848,33 @@ loadSavedName();
 // Pre-init for in-app browsers
 if(isInAppBrowser()){
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
+}
+
+// Use addEventListener for reliability in in-app browsers
+document.addEventListener('DOMContentLoaded', function(){});
+
+var submitBtn = document.getElementById('submitBtn');
+if(submitBtn){
+  submitBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    submitAttendance();
+  });
+  submitBtn.addEventListener('touchend', function(e){
+    e.preventDefault();
+    submitAttendance();
+  });
+}
+
+var btnIn = document.getElementById('btnIn');
+if(btnIn){
+  btnIn.addEventListener('click', function(e){ e.preventDefault(); selectAction('in'); });
+  btnIn.addEventListener('touchend', function(e){ e.preventDefault(); selectAction('in'); });
+}
+
+var btnOut = document.getElementById('btnOut');
+if(btnOut){
+  btnOut.addEventListener('click', function(e){ e.preventDefault(); selectAction('out'); });
+  btnOut.addEventListener('touchend', function(e){ e.preventDefault(); selectAction('out'); });
 }
 
 // ── Action toggle ──
