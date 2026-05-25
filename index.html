@@ -267,16 +267,18 @@ html,body{
   background:#f0f4ff;
   display:flex;flex-direction:column;
   align-items:center;padding:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 .success-overlay.hidden{display:none}
 .success-header{
-  width:100%;padding:60px 30px 30px;
+  width:100%;padding:24px 20px 16px;
   display:flex;flex-direction:column;align-items:center;
 }
 .success-icon-wrap{
-  width:80px;height:80px;border-radius:50%;
+  width:60px;height:60px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:40px;margin-bottom:16px;
+  font-size:30px;margin-bottom:10px;
 }
 .success-icon-wrap.in{background:var(--greenbg);border:3px solid var(--green)}
 .success-icon-wrap.out{background:var(--redbg);border:3px solid var(--red)}
@@ -292,7 +294,7 @@ html,body{
   overflow:hidden;
 }
 .success-selfie{
-  width:100%;aspect-ratio:4/3;object-fit:cover;display:block;
+  width:100%;height:auto;object-fit:contain;display:block;background:#000;border-radius:var(--radius);
 }
 .success-selfie.hidden{display:none}
 .success-info{padding:16px 18px}
@@ -485,17 +487,6 @@ canvas{display:none}
     </p>
   </div>
 
-  <!-- In-app browser warning -->
-  <div id="inAppWarn" style="display:none;background:#1e40af;padding:12px 16px;margin:0;display:flex;align-items:center;gap:10px">
-    <span style="font-size:22px;flex-shrink:0">⚠️</span>
-    <div>
-      <p style="font-size:13px;font-weight:700;color:#fff;margin:0">Hindi gumagana sa Messenger/Viber!</p>
-      <p style="font-size:12px;color:rgba(255,255,255,0.85);margin:4px 0 0">
-        I-tap ang <strong>⋮ o ··· → Open in Chrome/Safari</strong> para gumana ang app.
-      </p>
-    </div>
-  </div>
-
   <div class="gps-warn" id="gpsWarn">
     <div class="gps-warn-icon">📵</div>
     <div>
@@ -600,11 +591,11 @@ canvas{display:none}
     <div class="success-icon-wrap" id="successIcon"></div>
     <div class="success-title" id="successTitle"></div>
     <div class="success-sub" id="successSub"></div>
-    <div id="savePhotoTip" class="hidden" style="background:#fff3cd;border:1.5px solid #fde68a;border-radius:10px;padding:10px 16px;margin:10px 20px 0;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">📥</span>
-      <p style="font-size:12px;font-weight:700;color:#92400e;margin:0;line-height:1.5">
-        Long press the photo below<br>
-        <span style="font-weight:500;color:#b45309">then tap <strong>"Save to Photos"</strong> or <strong>"Download"</strong></span>
+    <div id="savePhotoTip" class="hidden" style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin:10px 20px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">📲</span>
+      <p style="font-size:13px;font-weight:700;color:#1e40af;margin:0;line-height:1.5">
+        Take a <strong>screenshot</strong> to save<br>
+        <span style="font-weight:500;font-size:12px;color:#2563eb">your attendance photo for reference</span>
       </p>
     </div>
   </div>
@@ -814,10 +805,8 @@ function checkInputs(){
 }
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
-// Show warning if in-app browser
+// Pre-init GPS for in-app browsers
 if(isInAppBrowser()){
-  var inAppWarn = document.getElementById('inAppWarn');
-  if(inAppWarn) inAppWarn.style.display = 'flex';
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
 }
 
