@@ -499,15 +499,7 @@ canvas{display:none}
 
       <div class="field">
         <label>Full Name</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="empName" placeholder="Enter your full name" autocomplete="name" style="flex:1">
-          <button id="clearNameBtn" onclick="clearSavedName()" style="display:none;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;font-family:inherit">
-            ✏️ Edit
-          </button>
-        </div>
-        <div id="savedNameHint" style="display:none;font-size:11px;color:#16a34a;margin-top:4px;font-weight:500">
-          ✅ Name saved on this device
-        </div>
+        <input type="text" id="empName" placeholder="Enter your full name" autocomplete="name">
       </div>
 
       <div class="field">
@@ -792,48 +784,6 @@ function setGPSUI(s, txt){
 }
 startGPS();
 
-// ── Saved name ──
-function loadSavedName(){
-  const saved = localStorage.getItem('empSavedName');
-  if(saved){
-    const input = document.getElementById('empName');
-    input.value = saved;
-    input.readOnly = true;
-    input.style.background = '#f0fdf4';
-    input.style.color = '#16a34a';
-    input.style.fontWeight = '600';
-    input.style.borderColor = '#86efac';
-    document.getElementById('clearNameBtn').style.display = 'block';
-    document.getElementById('savedNameHint').style.display = 'block';
-    checkInputs();
-  }
-}
-function clearSavedName(){
-  localStorage.removeItem('empSavedName');
-  const input = document.getElementById('empName');
-  input.value = '';
-  input.readOnly = false;
-  input.style.background = '';
-  input.style.color = '';
-  input.style.fontWeight = '';
-  input.style.borderColor = '';
-  document.getElementById('clearNameBtn').style.display = 'none';
-  document.getElementById('savedNameHint').style.display = 'none';
-  input.focus();
-  checkInputs();
-}
-function saveName(name){
-  localStorage.setItem('empSavedName', name);
-  const input = document.getElementById('empName');
-  input.readOnly = true;
-  input.style.background = '#f0fdf4';
-  input.style.color = '#16a34a';
-  input.style.fontWeight = '600';
-  input.style.borderColor = '#86efac';
-  document.getElementById('clearNameBtn').style.display = 'block';
-  document.getElementById('savedNameHint').style.display = 'block';
-}
-
 // Enable Log In/Out only when name AND destination are filled
 function checkInputs(){
   const name = document.getElementById('empName').value.trim();
@@ -844,7 +794,6 @@ function checkInputs(){
 }
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
-loadSavedName();
 // Pre-init for in-app browsers
 if(isInAppBrowser()){
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
@@ -1126,7 +1075,6 @@ function submitAttendance(){
   let h = d.getHours(), ampm = h >= 12 ? 'PM' : 'AM'; h = h%12||12;
   const timeStr = `${h}:${pad(d.getMinutes())} ${ampm}, ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
-  saveName(name);
   const record = { id: Date.now(), name, dest, type: actionType, ts, img: capturedImg, gps: gps ? {...gps} : null };
   records.unshift(record);
   try{ localStorage.setItem('attendRecords2', JSON.stringify(records)); }catch(e){}
@@ -1182,8 +1130,7 @@ function showSuccess(r, timeStr){
 
 // ── Reset form ──
 function resetForm(){
-  // Keep saved name — only clear if not saved
-  if(!localStorage.getItem('empSavedName')) document.getElementById('empName').value = '';
+  document.getElementById('empName').value = '';
   document.getElementById('empDest').value = '';
   capturedImg = null;
   const img = document.getElementById('previewImg');
