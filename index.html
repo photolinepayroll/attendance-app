@@ -1018,10 +1018,10 @@ function takePhoto(){
   ctx.fillRect(0, H - botBarH, W, botBarH);
 
   const dateStr = days2[d.getDay()] + ' ' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + '/' + d.getFullYear();
-  let hr = d.getHours(), mn = d.getMinutes(), sc = d.getSeconds();
+  let hr = d.getHours(), mn = d.getMinutes();
   const ampm = hr >= 12 ? 'PM' : 'AM';
   hr = hr % 12 || 12;
-  const timeStr = `${pad2(hr)}:${pad2(mn)}:${pad2(sc)} ${ampm}`;
+  const timeStr = `${pad2(hr)}:${pad2(mn)} ${ampm}`;
 
   const pad3 = Math.round(14*scale);
   const yBase = H - botBarH + Math.round(18*scale);
