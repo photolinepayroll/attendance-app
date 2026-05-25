@@ -501,7 +501,12 @@ canvas{display:none}
 
       <div class="field">
         <label>Full Name</label>
-        <input type="text" id="empName" placeholder="Enter your full name" autocomplete="name">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="empName" placeholder="Enter your full name" autocomplete="name" style="flex:1">
+          <button id="editNameBtn" onclick="editName()" style="display:none;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">
+            ✏️ Edit
+          </button>
+        </div>
       </div>
 
       <div class="field">
@@ -762,6 +767,44 @@ function setGPSUI(s, txt){
 startGPS();
 
 // Enable Log In/Out only when name AND destination are filled
+// ── Name persistence ──
+function loadSavedName(){
+  var saved = localStorage.getItem('empSavedName');
+  if(saved){
+    var inp = document.getElementById('empName');
+    inp.value = saved;
+    inp.readOnly = true;
+    inp.style.background = '#f0fdf4';
+    inp.style.borderColor = '#86efac';
+    inp.style.color = '#15803d';
+    inp.style.fontWeight = '600';
+    document.getElementById('editNameBtn').style.display = 'block';
+    checkInputs();
+  }
+}
+function editName(){
+  var inp = document.getElementById('empName');
+  inp.readOnly = false;
+  inp.style.background = '';
+  inp.style.borderColor = '';
+  inp.style.color = '';
+  inp.style.fontWeight = '';
+  inp.value = '';
+  document.getElementById('editNameBtn').style.display = 'none';
+  inp.focus();
+  checkInputs();
+}
+function saveName(name){
+  localStorage.setItem('empSavedName', name);
+  var inp = document.getElementById('empName');
+  inp.readOnly = true;
+  inp.style.background = '#f0fdf4';
+  inp.style.borderColor = '#86efac';
+  inp.style.color = '#15803d';
+  inp.style.fontWeight = '600';
+  document.getElementById('editNameBtn').style.display = 'block';
+}
+
 function checkInputs(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
@@ -771,6 +814,7 @@ function checkInputs(){
 }
 document.getElementById('empName').addEventListener('input', checkInputs);
 document.getElementById('empDest').addEventListener('input', checkInputs);
+loadSavedName();
 // Pre-init GPS for in-app browsers
 if(isInAppBrowser()){
   setTimeout(function(){ if(!gpsReady) setSimulatedGPS(); }, 1500);
@@ -1040,6 +1084,7 @@ function submitAttendance(){
   let h = d.getHours(), ampm = h >= 12 ? 'PM' : 'AM'; h = h%12||12;
   const timeStr = `${h}:${pad(d.getMinutes())} ${ampm}, ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
+  saveName(name);
   const record = { id: Date.now(), name, dest, type: actionType, ts, img: capturedImg, gps: gps ? {...gps} : null };
   records.unshift(record);
   try{ localStorage.setItem('attendRecords2', JSON.stringify(records)); }catch(e){}
@@ -1131,7 +1176,10 @@ function showSuccess(r, timeStr){
 
 // ── Reset form ──
 function resetForm(){
-  document.getElementById('empName').value = '';
+  // Keep saved name on reset
+  if(!localStorage.getItem('empSavedName')){
+    document.getElementById('empName').value = '';
+  }
   document.getElementById('empDest').value = '';
   capturedImg = null;
   const img = document.getElementById('previewImg');
