@@ -1101,7 +1101,7 @@ function showSuccess(r, timeStr){
   document.getElementById('successIcon').textContent = isIn ? '✅' : '🚪';
   document.getElementById('successTitle').className = `success-title ${r.type}`;
   document.getElementById('successTitle').textContent = isIn ? 'Logged In!' : 'Logged Out!';
-  document.getElementById('successSub').textContent = isIn ? 'Attendance recorded successfully.' : 'Have a safe trip home!';
+  document.getElementById('successSub').textContent = isIn ? 'Attendance recorded successfully.' : '';
   document.getElementById('si-name').textContent = r.name;
   document.getElementById('si-dest').textContent = r.dest;
   document.getElementById('si-time').textContent = timeStr;
