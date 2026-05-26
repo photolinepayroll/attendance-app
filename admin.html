@@ -363,16 +363,18 @@ function renderTable(){
       <tbody>${rows}</tbody>
     </table>`;
 
-  // Auto-fetch address for records with only coordinates
-  filtered.forEach(function(r, idx){
-    var addr = r.Address || '';
-    var lat = r.Latitude || '';
-    var lng = r.Longitude || '';
-    if(isCoords(addr) && lat && lng){
-      var cell = document.getElementById('addr_'+(r.id||idx));
-      if(cell) fetchAddrFromCoords(lat, lng, cell);
-    }
-  });
+  // Auto-fetch address for cells showing only coordinates
+  setTimeout(function(){
+    var cells = document.querySelectorAll('td[data-lat][data-lng]');
+    cells.forEach(function(cell){
+      var addr = cell.getAttribute('data-addr');
+      var lat  = cell.getAttribute('data-lat');
+      var lng  = cell.getAttribute('data-lng');
+      if(addr && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr.trim()) && lat && lng){
+        fetchAddrFromCoords(parseFloat(lat), parseFloat(lng), cell);
+      }
+    });
+  }, 300);
 }
 
 function openLightbox(src, name){
