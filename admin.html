@@ -181,7 +181,7 @@ function doLogout(){
 if(sessionStorage.getItem('adminAuth')){
   document.getElementById('loginWrap').style.display = 'none';
   document.getElementById('appWrap').style.display = 'block';
-  loadData();
+  setTimeout(function(){ loadData(); }, 300);
 }
 
 // ── CSV Load ──
@@ -229,7 +229,7 @@ function loadData(){
   document.getElementById('tableArea').innerHTML = '<div class="loading"><div class="spinner"></div>Loading records...</div>';
   document.getElementById('recordCount').textContent = 'Loading...';
 
-  fetch(CSV_URL)
+  fetch(CSV_URL + '&t=' + Date.now())
     .then(function(r){ return r.text(); })
     .then(function(text){
       var records = parseCSV(text);
