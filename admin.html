@@ -131,7 +131,10 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
         <input type="date" class="filter-input" id="filterDateTo" onchange="applyFilters()" style="display:none">
         <button onclick="clearDates()" style="padding:9px 14px;border-radius:8px;border:none;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">🗑️ Clear</button>
       </div>
-      <button class="export-btn" onclick="exportCSV()">⬇️ Export CSV</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="export-btn" style="margin-left:0" onclick="exportCSV()">⬇️ Export CSV</button>
+        <button onclick="printPreview()" style="padding:9px 18px;border-radius:8px;border:none;background:#1e40af;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px">🖨️ Print PDF</button>
+      </div>
     </div>
 
     <!-- Table -->
@@ -391,6 +394,99 @@ function splitTs(raw){
   var parts=f.split(' ');
   return {date:parts[0]||'',time:(parts[1]||'')+' '+(parts[2]||'')};
 }
+function printPreview(){
+  if(!filtered.length){ alert('No records to print.'); return; }
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<title>Attendance Report — Photoline</title>';
+  html += '<style>';
+  html += '* { box-sizing:border-box; margin:0; padding:0; }';
+  html += 'body { font-family: Arial, sans-serif; background: #fff; }';
+  html += '.page { width: 210mm; min-height: 297mm; padding: 12mm; }';
+  html += '.report-header { text-align:center; margin-bottom:10mm; border-bottom:2px solid #1e40af; padding-bottom:5mm; }';
+  html += '.report-header h1 { font-size:20px; color:#1e40af; font-weight:900; }';
+  html += '.report-header p { font-size:11px; color:#64748b; margin-top:3px; }';
+  html += '.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6mm; }';
+  html += '.card { border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; break-inside:avoid; }';
+  html += '.card img { width:100%; height:55mm; object-fit:cover; display:block; }';
+  html += '.card-info { padding:4px 8px 6px; }';
+  html += '.card-name { font-size:11px; font-weight:700; color:#1e293b; }';
+  html += '.card-dest { font-size:10px; color:#64748b; }';
+  html += '.card-row { display:flex; justify-content:space-between; margin-top:3px; }';
+  html += '.card-ts { font-size:9px; color:#475569; font-family:monospace; }';
+  html += '.badge-in { font-size:9px; font-weight:700; color:#16a34a; background:#dcfce7; padding:1px 6px; border-radius:10px; }';
+  html += '.badge-out { font-size:9px; font-weight:700; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:10px; }';
+  html += '.card-addr { font-size:9px; color:#64748b; margin-top:2px; }';
+  html += '.no-gps { font-size:9px; color:#f59e0b; }';
+  html += '@media print {';
+  html += '  body { margin:0; }';
+  html += '  .page { padding:10mm; }';
+  html += '  .grid { page-break-inside:auto; }';
+  html += '  .card { page-break-inside:avoid; }';
+  html += '  .no-print { display:none; }';
+  html += '}';
+  html += '</style></head><body>';
+
+  // Group records into pages of 6
+  var now = new Date().toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'});
+  var filterName = document.getElementById('filterName').value || 'All Employees';
+  var filterDate = document.getElementById('filterDate').value || '';
+
+  for(var i=0; i<filtered.length; i+=6){
+    var chunk = filtered.slice(i, i+6);
+    html += '<div class="page">';
+    html += '<div class="report-header">';
+    html += '<h1>PHOTOLINE — Field Duty Timesheet</h1>';
+    html += '<p>Search: ' + filterName + (filterDate ? ' | Date: ' + filterDate : '') + ' | Printed: ' + now + ' | Page ' + (Math.floor(i/6)+1) + ' of ' + Math.ceil(filtered.length/6) + '</p>';
+    html += '</div>';
+    html += '<div class="grid">';
+
+    chunk.forEach(function(r){
+      var thumbUrl = '';
+      var photoLink = r['Photo Link'] || '';
+      if(photoLink.includes('id=')){
+        var fid = photoLink.split('id=')[1];
+        thumbUrl = 'https://drive.google.com/thumbnail?id=' + fid + '&sz=w400';
+      }
+      var isIn = r.Type === 'Log In';
+      var badge = isIn
+        ? '<span class="badge-in">✅ Log In</span>'
+        : '<span class="badge-out">🚪 Log Out</span>';
+      var lat = r.Latitude||'', lng = r.Longitude||'';
+      var isFake = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700);
+      var addr = (!isFake && r.Address && /[a-zA-Z]/.test(r.Address))
+        ? r.Address : '<span class="no-gps">⚠️ No GPS</span>';
+
+      html += '<div class="card">';
+      if(thumbUrl){
+        html += '<img src="' + thumbUrl + '" alt="selfie">';
+      } else {
+        html += '<div style="width:100%;height:55mm;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:30px">👤</div>';
+      }
+      html += '<div class="card-info">';
+      html += '<div class="card-name">' + (r.Name||'—') + '</div>';
+      html += '<div class="card-dest">📍 ' + (r.Destination||'—') + '</div>';
+      html += '<div class="card-row"><span class="card-ts">' + formatTs(r.Timestamp) + '</span>' + badge + '</div>';
+      html += '<div class="card-addr">' + addr + '</div>';
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+  }
+
+  html += '<div class="no-print" style="position:fixed;top:20px;right:20px;display:flex;gap:10px">';
+  html += '<button onclick="window.print()" style="background:#1e40af;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>';
+  html += '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">✕ Close</button>';
+  html += '</div>';
+  html += '</body></html>';
+
+  var win = window.open('','_blank');
+  if(win){
+    win.document.write(html);
+    win.document.close();
+  }
+}
+
 function exportCSV(){
   if(!filtered.length){alert('No records to export.');return;}
   const headers=['Name','Destination','Date','Type','Time','Address','Photo Link'];
