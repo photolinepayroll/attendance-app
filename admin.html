@@ -327,7 +327,7 @@ function renderTable(){
       <td>${lat&&lng
         ? `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
              style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px;line-height:1.4">
-             <span>📍</span><span style="word-break:break-word">${r.Address||lat+', '+lng}</span></a>`
+             <span>📍</span><span style="word-break:break-word">${(r.Address && /[a-zA-Z]/.test(r.Address)) ? r.Address : 'GPS'}</span></a>`
         : `<span style="color:#94a3b8;font-size:12px">${r.Address||'No GPS'}</span>`}</td>
     </tr>`;
   }).join('');
@@ -341,18 +341,6 @@ function renderTable(){
       <tbody>${rows}</tbody>
     </table>`;
 
-  // Auto-fetch address for cells showing only coordinates
-  setTimeout(function(){
-    var cells = document.querySelectorAll('td[data-lat][data-lng]');
-    cells.forEach(function(cell){
-      var addr = cell.getAttribute('data-addr');
-      var lat  = cell.getAttribute('data-lat');
-      var lng  = cell.getAttribute('data-lng');
-      if(addr && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr.trim()) && lat && lng){
-        fetchAddrFromCoords(parseFloat(lat), parseFloat(lng), cell);
-      }
-    });
-  }, 300);
 }
 
 function openLightbox(src, name){
