@@ -546,7 +546,7 @@ canvas{display:none}
     <!-- Selfie — hidden until action selected -->
     <div class="selfie-section" id="selfieSection" style="display:none">
       <div class="section-label">📸 Selfie</div>
-      <div class="selfie-box" id="selfieBox" onclick="openCamera()">
+      <div class="selfie-box" id="selfieBox" onclick="openCamera()" style="cursor:pointer">
         <div class="selfie-empty" id="selfieEmpty">
           <div class="icon">📷</div>
           <p id="selfiePrompt">Tap to take selfie</p>
@@ -757,6 +757,7 @@ function startGPS(){
       if(warn) warn.style.display = 'none';
       // Show mini map
       showFormMap(gps.lat, gps.lng);
+      checkInputs(); // Enable buttons when GPS ready
     },
     err => {
       if(isInAppBrowser()){
@@ -826,7 +827,7 @@ function saveName(name){
 function checkInputs(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
-  const ok = name.length > 0 && dest.length > 0;
+  const ok = name.length > 0 && dest.length > 0 && gpsReady;
   document.getElementById('btnIn').disabled = !ok;
   document.getElementById('btnOut').disabled = !ok;
 }
@@ -905,10 +906,13 @@ async function openCamera(){
   if(mapWrap) mapWrap.style.visibility = 'hidden';
 
   if(!gpsReady){
-    const msg = gpsBlocked
-      ? 'Location/GPS access is required.\n\nPlease allow location permission in your browser settings, then reload the page.'
-      : 'GPS is still acquiring your location.\n\nPlease wait a moment and try again.';
-    alert(msg);
+    var msg = gpsBlocked
+      ? '📍 Location is OFF!\n\nPlease enable Location/GPS permission in your browser settings, then tap "Enable Location & Retry" button.'
+      : '📍 GPS is still loading...\n\nPlease wait a few seconds and try again.';
+    showFormError(msg.split('\n\n')[1] || msg);
+    // Show the GPS warning banner
+    var warn = document.getElementById('gpsWarn');
+    if(warn) warn.style.display = 'flex';
     return;
   }
   document.getElementById('camOverlay').classList.remove('hidden');
@@ -1158,8 +1162,8 @@ function submitAttendance(){
 
   // If GPS not ready, use fallback silently
   if(!gpsReady || !gps){
-    gps = { lat: 14.676041, lng: 121.043700, acc: 0, sim: true };
-    gpsReady = true;
+    showFormError('📍 Location is required! Please enable your GPS/Location and try again.');
+    return;
   }
 
   const d = new Date();
