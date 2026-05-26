@@ -8,7 +8,6 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Nunito',sans-serif;background:#f0f4ff;min-height:100vh;color:#1e293b}
-
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:20px}
 .login-card{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
 .login-logo{text-align:center;margin-bottom:24px}
@@ -20,7 +19,6 @@ body{font-family:'Nunito',sans-serif;background:#f0f4ff;min-height:100vh;color:#
 .login-btn{width:100%;padding:14px;margin-top:20px;background:#1e40af;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
 .login-btn:hover{background:#2563eb}
 .login-error{color:#dc2626;font-size:13px;margin-top:10px;text-align:center;display:none}
-
 .app{display:none}
 .topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
 .topbar-title h1{font-size:18px;font-weight:900;color:#1e40af}
@@ -28,22 +26,18 @@ body{font-family:'Nunito',sans-serif;background:#f0f4ff;min-height:100vh;color:#
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
 .logout-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
 .refresh-btn{padding:8px 16px;border-radius:8px;border:none;background:#1e40af;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px}
-
 .container{max-width:1200px;margin:0 auto;padding:24px 20px}
-
 .stat-card{background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid}
 @media(max-width:900px){#summaryGrid{grid-template-columns:repeat(3,1fr)!important}}
 @media(max-width:500px){#summaryGrid{grid-template-columns:repeat(2,1fr)!important}}
 .stat-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
 .stat-value{font-size:22px;font-weight:900;color:#1e293b;margin-top:2px}
 .stat-sub{font-size:10px;color:#94a3b8;margin-top:2px}
-
 .filters{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;gap:12px;flex-wrap:wrap;align-items:center;border:1px solid #e2e8f0}
 .filter-input{padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;outline:none;transition:border .2s;min-width:160px;background:#fff;color:#1e293b}
 .filter-input:focus{border-color:#2563eb}
 .filter-select{padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;outline:none;background:#fff;cursor:pointer;color:#1e293b}
 .export-btn{padding:9px 18px;border-radius:8px;border:none;background:#16a34a;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px;margin-left:auto}
-
 .table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e2e8f0}
 .table-header{padding:14px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
 .table-header span{font-size:14px;font-weight:800;color:#1e293b}
@@ -65,7 +59,6 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:60px 20px;color:#94a3b8;font-size:14px}
 .empty .icon{font-size:48px;margin-bottom:12px}
-
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:16px}
 .lightbox.open{display:flex}
 .lightbox img{max-width:100%;max-height:80vh;border-radius:12px;object-fit:contain}
@@ -91,11 +84,9 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
 
 <div class="app" id="appWrap">
   <div class="topbar">
-    <div>
-      <div class="topbar-title">
-        <h1>Photoline Admin</h1>
-        <p>Field Duty Timesheet Dashboard</p>
-      </div>
+    <div class="topbar-title">
+      <h1>Photoline Admin</h1>
+      <p>Field Duty Timesheet Dashboard</p>
     </div>
     <div class="topbar-right">
       <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
@@ -104,6 +95,7 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
   </div>
 
   <div class="container">
+
     <!-- Employee Summary -->
     <div id="empSummary" style="display:none;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -162,7 +154,7 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZtqPBdk51QMFLxchgCF9gdMymFHtdLx3zI5m87YOEHdgdQD1FfvIG_FfnMLzCEQxT/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_zBYdZOXcsEE5xL2c-Q60_TDavKSGT5QhRAyjDhceziNnxgASXTGd2Y7ZbT61Hdt8oA/exec';
 const ADMIN_PASS = 'Photoline.201';
 
 let allRecords = [];
@@ -192,15 +184,41 @@ if(sessionStorage.getItem('adminAuth')){
   loadData();
 }
 
+// ── CSV Load ──
+var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZHyqa-jPGZYgystWjoXi8nG1TCvmodSqXT675cY4xpA5jpWWVw-lYSBoLSbgWS0LNHgvyXxLcgZWt/pub?output=csv';
+
+function parseCSV(text){
+  var lines = text.split('\n').filter(function(l){ return l.trim(); });
+  if(lines.length < 2) return [];
+  var headers = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+  return lines.slice(1).map(function(line){
+    var cols = [];
+    var cur = '', inQ = false;
+    for(var i=0;i<line.length;i++){
+      var c = line[i];
+      if(c==='"'){ inQ=!inQ; }
+      else if(c===','&&!inQ){ cols.push(cur); cur=''; }
+      else{ cur+=c; }
+    }
+    cols.push(cur);
+    var obj = {};
+    headers.forEach(function(h,i){ obj[h] = (cols[i]||'').trim(); });
+    return obj;
+  });
+}
+
 function loadData(){
   document.getElementById('tableArea').innerHTML = '<div class="loading"><div class="spinner"></div>Loading records...</div>';
   document.getElementById('recordCount').textContent = 'Loading...';
-  fetch(SCRIPT_URL)
-    .then(r => r.json())
-    .then(data => {
-      if(data.status === 'ok'){ allRecords = data.records.reverse(); applyFilters(); }
+
+  fetch(CSV_URL)
+    .then(function(r){ return r.text(); })
+    .then(function(text){
+      var records = parseCSV(text);
+      allRecords = records.reverse();
+      applyFilters();
     })
-    .catch(() => {
+    .catch(function(){
       document.getElementById('tableArea').innerHTML = '<div class="empty"><div class="icon">⚠️</div>Failed to load. Check connection.</div>';
     });
 }
@@ -208,7 +226,7 @@ function loadData(){
 function formatTs(raw){
   if(!raw) return '—';
   var s = String(raw).trim().replace('T',' ').replace('Z','').replace(/\.\d+$/,'');
-  var parts = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  var parts = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
   if(!parts) return s;
   var h=parseInt(parts[4]), mi=parts[5], ampm=h>=12?'PM':'AM';
   h=h%12||12;
@@ -218,7 +236,7 @@ function formatTs(raw){
 function getHour(ts){
   if(!ts) return -1;
   var s = String(ts).replace('T',' ').replace('Z','');
-  var m = s.match(/(\d{2}):(\d{2}):(\d{2})/);
+  var m = s.match(/(\d{2}):(\d{2}):/);
   return m ? parseInt(m[1]) + parseInt(m[2])/60 : -1;
 }
 
@@ -254,7 +272,6 @@ function applyFilters(){
     }
     return matchName && matchDest && matchType && matchDate;
   });
-
   renderTable();
 }
 
@@ -265,59 +282,55 @@ function updateSummary(){
   filtered.forEach(function(r){ var k=(r.Name||'').toLowerCase().trim(); if(!nameMap[k]) nameMap[k]=r.Name||''; });
   var keys = Object.keys(nameMap);
   if(keys.length>1){ document.getElementById('empSummary').style.display='none'; return; }
-
-  var recs = filtered;
-  var empName = nameMap[keys[0]]||keys[0];
-  var dates = new Set(recs.map(r => String(r.Timestamp||'').substring(0,10)));
-  var locs = new Set(recs.map(r => (r.Destination||'').trim()).filter(Boolean));
-  var dayLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=7&&h<18; }).length;
-  var eveningLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=18&&h<22; }).length;
-  var otLogs = recs.filter(r => { var h=getHour(r.Timestamp); return h>=22.017||(h>=0&&h<7); }).length;
-
-  document.getElementById('empSummaryName').textContent = empName;
-  var cards = [
-    {label:'Total Days',    value:dates.size,    sub:'Unique working days', color:'#2563eb'},
-    {label:'Total Records', value:recs.length,   sub:'Log In + Log Out',   color:'#7c3aed'},
-    {label:'Locations',     value:locs.size,     sub:'Unique destinations', color:'#0891b2'},
-    {label:'Day Logs',      value:dayLogs,       sub:'7:00 AM – 5:59 PM',  color:'#16a34a'},
-    {label:'Evening Logs',  value:eveningLogs,   sub:'6:00 PM – 10:00 PM', color:'#d97706'},
-    {label:'Overtime Logs', value:otLogs,        sub:'10:01 PM – 6:59 AM', color:'#dc2626'},
+  var recs=filtered, empName=nameMap[keys[0]]||keys[0];
+  var dates=new Set(recs.map(r=>String(r.Timestamp||'').substring(0,10)));
+  var locs=new Set(recs.map(r=>(r.Destination||'').trim()).filter(Boolean));
+  var dayLogs=recs.filter(r=>{var h=getHour(r.Timestamp);return h>=7&&h<18;}).length;
+  var eveningLogs=recs.filter(r=>{var h=getHour(r.Timestamp);return h>=18&&h<22;}).length;
+  var otLogs=recs.filter(r=>{var h=getHour(r.Timestamp);return h>=22.017||(h>=0&&h<7);}).length;
+  document.getElementById('empSummaryName').textContent=empName;
+  var cards=[
+    {label:'Total Days',value:dates.size,sub:'Unique working days',color:'#2563eb'},
+    {label:'Total Records',value:recs.length,sub:'Log In + Log Out',color:'#7c3aed'},
+    {label:'Locations',value:locs.size,sub:'Unique destinations',color:'#0891b2'},
+    {label:'Day Logs',value:dayLogs,sub:'7:00 AM – 5:59 PM',color:'#16a34a'},
+    {label:'Evening Logs',value:eveningLogs,sub:'6:00 PM – 10:00 PM',color:'#d97706'},
+    {label:'Overtime Logs',value:otLogs,sub:'10:01 PM – 6:59 AM',color:'#dc2626'},
   ];
-  document.getElementById('summaryGrid').innerHTML = cards.map(c =>
+  document.getElementById('summaryGrid').innerHTML=cards.map(c=>
     `<div class="stat-card" style="border-color:${c.color}">
       <div class="stat-label">${c.label}</div>
       <div class="stat-value" style="color:${c.color}">${c.value}</div>
       <div class="stat-sub">${c.sub}</div>
     </div>`
   ).join('');
-  document.getElementById('empSummary').style.display = 'block';
+  document.getElementById('empSummary').style.display='block';
 }
 
 function renderTable(){
-  document.getElementById('recordCount').textContent = filtered.length + ' record' + (filtered.length!==1?'s':'');
+  document.getElementById('recordCount').textContent = filtered.length+' record'+(filtered.length!==1?'s':'');
   updateSummary();
-
   if(!filtered.length){
-    document.getElementById('tableArea').innerHTML = '<div class="empty"><div class="icon">📋</div>No records found.</div>';
+    document.getElementById('tableArea').innerHTML='<div class="empty"><div class="icon">📋</div>No records found.</div>';
     return;
   }
-
-  const rows = filtered.map(r => {
-    const isIn = r.Type === 'Log In';
-    const badge = isIn ? '<span class="badge-in">✅ Log In</span>' : '<span class="badge-out">🚪 Log Out</span>';
-    var thumbUrl='', fullUrl=r['Photo Link']||'';
+  const rows=filtered.map(r=>{
+    const isIn=r.Type==='Log In';
+    const badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
+    var thumbUrl='',fullUrl=r['Photo Link']||'';
     if(fullUrl.includes('id=')){
       var fid=fullUrl.split('id=')[1];
       thumbUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w120';
       fullUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w800';
     }
-    const photo = thumbUrl
-      ? `<img src="${thumbUrl}" class="photo-thumb" alt="selfie"
+    const photo=thumbUrl
+      ?`<img src="${thumbUrl}" class="photo-thumb" alt="selfie"
            onerror="this.style.display='none';this.nextSibling.style.display='flex'"
            onclick="openLightbox('${fullUrl}','${(r.Name||'').replace(/'/g,'')}')">
          <div class="no-photo" style="display:none">👤</div>`
-      : '<div class="no-photo">👤</div>';
+      :'<div class="no-photo">👤</div>';
     const lat=r.Latitude||'', lng=r.Longitude||'';
+    const addr=r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS';
     return `<tr>
       <td>${photo}</td>
       <td><strong>${r.Name||'—'}</strong></td>
@@ -325,14 +338,13 @@ function renderTable(){
       <td>${badge}</td>
       <td class="ts-cell">${formatTs(r.Timestamp)}</td>
       <td>${lat&&lng
-        ? `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
-             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px;line-height:1.4">
-             <span>📍</span><span style="word-break:break-word">${(r.Address && /[a-zA-Z]/.test(r.Address)) ? r.Address : 'GPS'}</span></a>`
-        : `<span style="color:#94a3b8;font-size:12px">${r.Address||'No GPS'}</span>`}</td>
+        ?`<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
+             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
+             <span>📍</span><span style="word-break:break-word">${addr}</span></a>`
+        :`<span style="color:#94a3b8;font-size:12px">${r.Address||'No GPS'}</span>`}</td>
     </tr>`;
   }).join('');
-
-  document.getElementById('tableArea').innerHTML = `
+  document.getElementById('tableArea').innerHTML=`
     <table>
       <thead><tr>
         <th>Photo</th><th>Name</th><th>Destination</th>
@@ -340,13 +352,11 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
-
 }
 
-function openLightbox(src, name){
-  document.getElementById('lbImg').src = src;
-  document.getElementById('lbName').textContent = name;
-  document.getElementById('lbImg').onerror = function(){ this.alt='Image unavailable'; };
+function openLightbox(src,name){
+  document.getElementById('lbImg').src=src;
+  document.getElementById('lbName').textContent=name;
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox(){
@@ -355,31 +365,27 @@ function closeLightbox(){
 }
 
 function splitTs(raw){
-  var f = formatTs(raw);
-  if(!f || f==='—') return {date:'',time:''};
-  var parts = f.split(' ');
-  // parts: ['05/26/2026', '12:47', 'AM']
-  return { date: parts[0]||'', time: (parts[1]||'')+' '+(parts[2]||'') };
+  var f=formatTs(raw);
+  if(!f||f==='—') return {date:'',time:''};
+  var parts=f.split(' ');
+  return {date:parts[0]||'',time:(parts[1]||'')+' '+(parts[2]||'')};
 }
 function exportCSV(){
-  if(!filtered.length){ alert('No records to export.'); return; }
-  const exportHeaders=['Name','Destination','Date','Type','Time','Address','Photo Link'];
-  const rows=[
-    exportHeaders,
-    ...filtered.map(r=>{
-      var ts = splitTs(r.Timestamp);
-      var type = r.Type==='Log In'?'IN':r.Type==='Log Out'?'OUT':r.Type||'';
-      return [
-        '"'+(r.Name||'')+'"',
-        '"'+(r.Destination||'')+'"',
-        '"'+ts.date+'"',
-        '"'+type+'"',
-        '"'+ts.time.trim()+'"',
-        '"'+(r.Address||'')+'"',
-        '"'+(r['Photo Link']||'')+'"',
-      ];
-    })
-  ];
+  if(!filtered.length){alert('No records to export.');return;}
+  const headers=['Name','Destination','Date','Type','Time','Address','Photo Link'];
+  const rows=[headers,...filtered.map(r=>{
+    var ts=splitTs(r.Timestamp);
+    var type=r.Type==='Log In'?'IN':r.Type==='Log Out'?'OUT':r.Type||'';
+    return[
+      '"'+(r.Name||'')+'"',
+      '"'+(r.Destination||'')+'"',
+      '"'+ts.date+'"',
+      '"'+type+'"',
+      '"'+ts.time.trim()+'"',
+      '"'+(r.Address||'')+'"',
+      '"'+(r['Photo Link']||'')+'"',
+    ];
+  })];
   const csv=rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
