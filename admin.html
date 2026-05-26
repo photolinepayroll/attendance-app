@@ -205,6 +205,28 @@ function loadData(){
     });
 }
 
+// Detect if address is just coordinates (e.g. "15.17811, 120.587938")
+function isCoords(addr){
+  return addr && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr.trim());
+}
+
+async function fetchAddrFromCoords(lat, lng, cell){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16`);
+    const data = await res.json();
+    if(data && data.address){
+      const a = data.address;
+      const parts = [
+        a.road || a.pedestrian || a.neighbourhood,
+        a.suburb || a.city_district || a.village,
+        a.city || a.municipality || a.county
+      ].filter(Boolean);
+      const addr = parts.length ? parts.join(', ') : data.display_name.split(',').slice(0,3).join(',').trim();
+      cell.querySelector('span:last-child').textContent = addr;
+    }
+  } catch(e){}
+}
+
 function formatTs(raw){
   if(!raw) return '—';
   var s = String(raw).trim().replace('T',' ').replace('Z','').replace(/\.\d+$/,'');
@@ -340,6 +362,17 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+  // Auto-fetch address for records with only coordinates
+  filtered.forEach(function(r, idx){
+    var addr = r.Address || '';
+    var lat = r.Latitude || '';
+    var lng = r.Longitude || '';
+    if(isCoords(addr) && lat && lng){
+      var cell = document.getElementById('addr_'+(r.id||idx));
+      if(cell) fetchAddrFromCoords(lat, lng, cell);
+    }
+  });
 }
 
 function openLightbox(src, name){
