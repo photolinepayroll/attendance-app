@@ -330,18 +330,21 @@ function renderTable(){
          <div class="no-photo" style="display:none">👤</div>`
       :'<div class="no-photo">👤</div>';
     const lat=r.Latitude||'', lng=r.Longitude||'';
-    const addr=r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS';
+    // Detect simulated/fake GPS coordinates
+    const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700) ||
+                      (parseFloat(lat)===14.628533);
+    const addr = isFakeGPS ? null : (r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS');
     return `<tr>
       <td>${photo}</td>
       <td><strong>${r.Name||'—'}</strong></td>
       <td>${r.Destination||'—'}</td>
       <td>${badge}</td>
       <td class="ts-cell">${formatTs(r.Timestamp)}</td>
-      <td>${lat&&lng
+      <td>${!isFakeGPS&&lat&&lng
         ?`<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
              style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
              <span>📍</span><span style="word-break:break-word">${addr}</span></a>`
-        :`<span style="color:#94a3b8;font-size:12px">${r.Address||'No GPS'}</span>`}</td>
+        :`<span style="color:#94a3b8;font-size:12px;font-style:italic">⚠️ No GPS</span>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('tableArea').innerHTML=`
