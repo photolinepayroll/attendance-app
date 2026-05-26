@@ -188,21 +188,39 @@ if(sessionStorage.getItem('adminAuth')){
 var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZHyqa-jPGZYgystWjoXi8nG1TCvmodSqXT675cY4xpA5jpWWVw-lYSBoLSbgWS0LNHgvyXxLcgZWt/pub?output=csv';
 
 function parseCSV(text){
-  var lines = text.split('\n').filter(function(l){ return l.trim(); });
+  // Remove BOM if present
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  var lines = text.split('\n');
+  // Filter truly empty lines
+  lines = lines.filter(function(l){ return l.replace(/,/g,'').trim().length > 0; });
   if(lines.length < 2) return [];
-  var headers = lines[0].split(',').map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
-  return lines.slice(1).map(function(line){
-    var cols = [];
-    var cur = '', inQ = false;
+
+  // Parse a single CSV line properly
+  function parseLine(line){
+    var cols = [], cur = '', inQ = false;
     for(var i=0;i<line.length;i++){
       var c = line[i];
-      if(c==='"'){ inQ=!inQ; }
-      else if(c===','&&!inQ){ cols.push(cur); cur=''; }
-      else{ cur+=c; }
+      if(c==='"'){
+        if(inQ && line[i+1]==='"'){ cur+='"'; i++; }
+        else { inQ=!inQ; }
+      } else if(c===','&&!inQ){
+        cols.push(cur.trim());
+        cur='';
+      } else {
+        cur+=c;
+      }
     }
-    cols.push(cur);
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  var headers = parseLine(lines[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+  console.log('CSV Headers:', headers);
+
+  return lines.slice(1).map(function(line){
+    var cols = parseLine(line);
     var obj = {};
-    headers.forEach(function(h,i){ obj[h] = (cols[i]||'').trim(); });
+    headers.forEach(function(h,i){ obj[h] = (cols[i]||'').replace(/^"|"$/g,'').trim(); });
     return obj;
   });
 }
