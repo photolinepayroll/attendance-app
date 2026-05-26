@@ -465,7 +465,12 @@ function printPreview(){
       } else {
         html += '<div class="card-no-photo">👤</div>';
       }
-      html += '</div>';
+      html += '<div class="card-info">';
+      html += '<div class="card-top"><span class="card-name">' + (r.Name||'—') + '</span>' + badge + '</div>';
+      html += '<div class="card-dest">📍 ' + (r.Destination||'—') + '</div>';
+      html += '<div class="card-ts">' + formatTs(r.Timestamp) + '</div>';
+      html += '<div class="card-addr">' + (addr==='<span class=\"no-gps\">⚠️ No GPS</span>'?'⚠️ No GPS':addr) + '</div>';
+      html += '</div></div>';
     });
 
     html += '</div></div>';
