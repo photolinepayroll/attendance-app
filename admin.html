@@ -409,8 +409,8 @@ function printPreview(){
   html += '.report-header p { font-size:10px; color:#64748b; margin-top:2px; }';
   html += '.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5mm; }';
   html += '.card { border:1.5px solid #e2e8f0; border-radius:8px; overflow:hidden; break-inside:avoid; background:#fff; }';
-  html += '.card-photo-wrap { position:relative; width:100%; height:60mm; background:#000; overflow:hidden; }';
-  html += '.card-photo-wrap img { width:100%; height:100%; object-fit:cover; display:block; }';
+  html += '.card-photo-wrap { position:relative; width:100%; height:80mm; background:#000; overflow:hidden; }';
+  html += '.card-photo-wrap img { width:100%; height:100%; object-fit:contain; display:block; background:#000; }';
   html += '.card-no-photo { width:100%; height:58mm; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:36px; }';
   html += '.card-info { padding:5px 8px 6px; border-top:1px solid #f1f5f9; }';
   html += '.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2px; }';
