@@ -494,10 +494,10 @@ canvas{display:none}
     <div style="flex:1">
       <p id="gpsWarnMsg" style="font-weight:700;font-size:14px;margin-bottom:4px">Location access is required.</p>
       <small style="font-size:12px;color:#7f1d1d;line-height:1.6;display:block">
-        1. I-tap ang <strong>⋮ o ···</strong> sa browser<br>
-        2. Piliin ang <strong>Site Settings</strong> o <strong>Permissions</strong><br>
-        3. I-allow ang <strong>Location</strong><br>
-        4. I-tap ang button sa baba
+        <strong>Sa Messenger/Viber:</strong><br>
+        I-tap ang <strong>⋮ → Open in Chrome/Safari</strong> tapos i-allow ang Location.<br><br>
+        <strong>Sa Chrome/Safari:</strong><br>
+        I-tap ang 🔒 sa address bar → i-allow ang Location.
       </small>
       <div style="margin-top:10px">
         <button onclick="retryGPS()" style="background:#dc2626;border:none;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
@@ -1063,11 +1063,18 @@ function takePhoto(){
   const gpsFs = Math.round(12 * scale);
   ctx.font = `${gpsFs}px -apple-system,sans-serif`;
   ctx.fillStyle = '#4ade80';
-  const gpsLine = gps
-    ? (gps.address
+  // Detect fake/simulated GPS
+  const isFake = gps && (
+    (Math.abs(gps.lat - 14.676041) < 0.001 && Math.abs(gps.lng - 121.043700) < 0.001) ||
+    gps.sim === true
+  );
+  const gpsLine = (!gps || isFake)
+    ? '⚠️ No GPS — Location not available'
+    : (gps.address
         ? `📍 ${gps.address}`
-        : `📍 ${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)} ±${gps.acc}m`)
-    : '📍 GPS unavailable';
+        : `📍 ${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)} ±${gps.acc}m`);
+  const gpsColor = (!gps || isFake) ? '#f87171' : '#4ade80';
+  ctx.fillStyle = gpsColor;
   const maxGpsW = W - pad3*2;
   wrapText(ctx, gpsLine, pad3, yBase + timeFs + Math.round(36*scale), maxGpsW, Math.round(16*scale));
 
