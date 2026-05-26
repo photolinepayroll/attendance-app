@@ -972,11 +972,8 @@ function takePhoto(){
   canvas.width = video.videoWidth || 720;
   canvas.height = video.videoHeight || 720;
 
-  // Draw mirrored selfie
-  ctx.save();
-  if(facingMode === 'user'){ ctx.scale(-1,1); ctx.drawImage(video,-canvas.width,0); }
-  else { ctx.drawImage(video,0,0); }
-  ctx.restore();
+  // Draw video - no flip (preview handles mirror via CSS scaleX)
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const W = canvas.width, H = canvas.height;
   const scale = W / 400; // normalize to 400px base
