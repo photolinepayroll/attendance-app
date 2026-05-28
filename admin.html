@@ -117,6 +117,12 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
         <option value="Log In">✅ Log In</option>
         <option value="Log Out">🚪 Log Out</option>
       </select>
+      <select class="filter-select" id="filterDuplicate" onchange="applyFilters()">
+        <option value="">All Records</option>
+        <option value="dup_name">🔁 Duplicate Full Name</option>
+        <option value="dup_first">🔁 Duplicate First Name</option>
+        <option value="dup_last">🔁 Duplicate Last Name</option>
+      </select>
     </div>
 
     <!-- Filters Row 2 -->
@@ -282,7 +288,10 @@ function applyFilters(){
   const dateTo = document.getElementById('filterDateTo').value;
   const mode = document.getElementById('dateMode').value;
 
-  filtered = allRecords.filter(r => {
+  var dupMode = document.getElementById('filterDuplicate').value;
+
+  // First apply basic filters
+  var base = allRecords.filter(r => {
     const matchName = !name || (r.Name||'').toLowerCase().includes(name);
     const matchDest = !dest || (r.Destination||'').toLowerCase().includes(dest);
     const matchType = !type || r.Type === type;
@@ -293,6 +302,25 @@ function applyFilters(){
     }
     return matchName && matchDest && matchType && matchDate;
   });
+
+  // Apply duplicate filter
+  if(dupMode){
+    var getKey = function(r){
+      var n = (r.Name||'').trim();
+      if(dupMode === 'dup_name') return n.toLowerCase();
+      var parts = n.split(' ').filter(Boolean);
+      if(dupMode === 'dup_first') return (parts[0]||'').toLowerCase();
+      if(dupMode === 'dup_last') return (parts[parts.length-1]||'').toLowerCase();
+      return n.toLowerCase();
+    };
+    // Count occurrences
+    var counts = {};
+    base.forEach(function(r){ var k=getKey(r); counts[k]=(counts[k]||0)+1; });
+    // Only keep records with count > 1
+    filtered = base.filter(function(r){ return counts[getKey(r)] > 1; });
+  } else {
+    filtered = base;
+  }
   renderTable();
 }
 
@@ -355,7 +383,13 @@ function renderTable(){
     const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700) ||
                       (parseFloat(lat)===14.628533);
     const addr = isFakeGPS ? null : (r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS');
-    return `<tr>
+    // Check if this record is a duplicate
+    var isDup = document.getElementById('filterDuplicate').value !== '';
+    var rowStyle = isDup ? ' style="background:#fff7ed"' : '';
+    var recId = (r.Name||'') + '_' + (r.Timestamp||'') + '_' + i;
+    var safeId = recId.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<tr${rowStyle}>
+      <td><input type="checkbox" class="row-check" data-idx="${i}" style="cursor:pointer;width:16px;height:16px"></td>
       <td>${photo}</td>
       <td><strong>${r.Name||'—'}</strong></td>
       <td>${r.Destination||'—'}</td>
@@ -371,11 +405,31 @@ function renderTable(){
   document.getElementById('tableArea').innerHTML=`
     <table>
       <thead><tr>
+        <th style="width:36px"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor:pointer;width:16px;height:16px"></th>
         <th>Photo</th><th>Name</th><th>Destination</th>
         <th>Type</th><th>Timestamp</th><th>Address / Location</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+function toggleSelectAll(cb){
+  document.querySelectorAll('.row-check').forEach(function(c){ c.checked = cb.checked; });
+  updateSelectionCount();
+}
+function updateSelectionCount(){
+  var selected = document.querySelectorAll('.row-check:checked').length;
+  var total = document.querySelectorAll('.row-check').length;
+  var sa = document.getElementById('selectAll');
+  if(sa) sa.indeterminate = selected > 0 && selected < total;
+  if(sa) sa.checked = selected === total && total > 0;
+}
+function getSelectedRecords(){
+  var checked = document.querySelectorAll('.row-check:checked');
+  if(checked.length === 0) return filtered; // if none selected, use all filtered
+  var indices = [];
+  checked.forEach(function(c){ indices.push(parseInt(c.getAttribute('data-idx'))); });
+  return indices.map(function(i){ return filtered[i]; }).filter(Boolean);
 }
 
 function openLightbox(src,name){
@@ -395,7 +449,11 @@ function splitTs(raw){
   return {date:parts[0]||'',time:(parts[1]||'')+' '+(parts[2]||'')};
 }
 function printPreview(){
-  if(!filtered.length){ alert('No records to print.'); return; }
+  var toPrint = getSelectedRecords();
+  var selCnt = document.querySelectorAll('.row-check:checked').length;
+  if(!toPrint.length){ alert('No records to print.'); return; }
+  if(selCnt > 0 && !confirm('Print ' + selCnt + ' selected record(s)?')) return;
+  var filtered = toPrint;
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
   html += '<title>Attendance Report — Photoline</title>';
@@ -490,9 +548,12 @@ function printPreview(){
 }
 
 function exportCSV(){
-  if(!filtered.length){alert('No records to export.');return;}
+  var toExport = getSelectedRecords();
+  var selCount = document.querySelectorAll('.row-check:checked').length;
+  if(!toExport.length){alert('No records to export.');return;}
+  if(selCount > 0 && !confirm('Export ' + selCount + ' selected record(s)?')) return;
   const headers=['Name','Destination','Date','Type','Time','Address','Photo Link'];
-  const rows=[headers,...filtered.map(r=>{
+  const rows=[headers,...toExport.map(r=>{
     var ts=splitTs(r.Timestamp);
     var type=r.Type==='Log In'?'IN':r.Type==='Log Out'?'OUT':r.Type||'';
     return[
