@@ -68,7 +68,6 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
 </style>
 </head>
 <body>
-
 <div class="login-wrap" id="loginWrap">
   <div class="login-card">
     <div class="login-logo">
@@ -81,7 +80,6 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
     <div class="login-error" id="loginError">❌ Wrong password. Try again.</div>
   </div>
 </div>
-
 <div class="app" id="appWrap">
   <div class="topbar">
     <div class="topbar-title">
@@ -93,10 +91,7 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
       <button class="logout-btn" onclick="doLogout()">Logout</button>
     </div>
   </div>
-
   <div class="container">
-
-    <!-- Employee Summary -->
     <div id="empSummary" style="display:none;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <div style="width:42px;height:42px;background:#1e40af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff">👤</div>
@@ -107,8 +102,6 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
       </div>
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px" id="summaryGrid"></div>
     </div>
-
-    <!-- Filters Row 1 -->
     <div class="filters">
       <input type="text" class="filter-input" id="filterName" placeholder="🔍 Search name..." oninput="applyFilters()">
       <input type="text" class="filter-input" id="filterDest" placeholder="📍 Search destination..." oninput="applyFilters()">
@@ -117,15 +110,8 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
         <option value="Log In">✅ Log In</option>
         <option value="Log Out">🚪 Log Out</option>
       </select>
-      <select class="filter-select" id="filterDuplicate" onchange="applyFilters()">
-        <option value="">All Records</option>
-        <option value="dup_name">🔁 Duplicate Full Name</option>
-        <option value="dup_first">🔁 Duplicate First Name</option>
-        <option value="dup_last">🔁 Duplicate Last Name</option>
-      </select>
-    </div>
 
-    <!-- Filters Row 2 -->
+    </div>
     <div class="filters" style="margin-top:-12px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1">
         <select class="filter-select" id="dateMode" onchange="toggleDateMode()" style="min-width:140px">
@@ -142,8 +128,6 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
         <button onclick="printPreview()" style="padding:9px 18px;border-radius:8px;border:none;background:#1e40af;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px">🖨️ Print PDF</button>
       </div>
     </div>
-
-    <!-- Table -->
     <div class="table-wrap">
       <div class="table-header">
         <span>Attendance Records</span>
@@ -155,20 +139,16 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
     </div>
   </div>
 </div>
-
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lb-close" onclick="closeLightbox()">✕</button>
   <img id="lbImg" alt="selfie" onclick="event.stopPropagation()">
   <div class="lb-name" id="lbName"></div>
 </div>
-
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_zBYdZOXcsEE5xL2c-Q60_TDavKSGT5QhRAyjDhceziNnxgASXTGd2Y7ZbT61Hdt8oA/exec';
 const ADMIN_PASS = 'Photoline.201';
-
 let allRecords = [];
 let filtered = [];
-
 function doLogin(){
   const pass = document.getElementById('passInput').value;
   if(pass === ADMIN_PASS){
@@ -192,19 +172,12 @@ if(sessionStorage.getItem('adminAuth')){
   document.getElementById('appWrap').style.display = 'block';
   setTimeout(function(){ loadData(); }, 300);
 }
-
-// ── CSV Load ──
 var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZHyqa-jPGZYgystWjoXi8nG1TCvmodSqXT675cY4xpA5jpWWVw-lYSBoLSbgWS0LNHgvyXxLcgZWt/pub?output=csv';
-
 function parseCSV(text){
-  // Remove BOM if present
   text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
   var lines = text.split('\n');
-  // Filter truly empty lines
   lines = lines.filter(function(l){ return l.replace(/,/g,'').trim().length > 0; });
   if(lines.length < 2) return [];
-
-  // Parse a single CSV line properly
   function parseLine(line){
     var cols = [], cur = '', inQ = false;
     for(var i=0;i<line.length;i++){
@@ -222,10 +195,7 @@ function parseCSV(text){
     cols.push(cur.trim());
     return cols;
   }
-
   var headers = parseLine(lines[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
-  console.log('CSV Headers:', headers);
-
   return lines.slice(1).map(function(line){
     var cols = parseLine(line);
     var obj = {};
@@ -233,11 +203,9 @@ function parseCSV(text){
     return obj;
   });
 }
-
 function loadData(){
   document.getElementById('tableArea').innerHTML = '<div class="loading"><div class="spinner"></div>Loading records...</div>';
   document.getElementById('recordCount').textContent = 'Loading...';
-
   fetch(CSV_URL + '&t=' + Date.now())
     .then(function(r){ return r.text(); })
     .then(function(text){
@@ -249,7 +217,6 @@ function loadData(){
       document.getElementById('tableArea').innerHTML = '<div class="empty"><div class="icon">⚠️</div>Failed to load. Check connection.</div>';
     });
 }
-
 function formatTs(raw){
   if(!raw) return '—';
   var s = String(raw).trim().replace('T',' ').replace('Z','').replace(/\.\d+$/,'');
@@ -259,14 +226,12 @@ function formatTs(raw){
   h=h%12||12;
   return parts[2]+'/'+parts[3]+'/'+parts[1]+' '+String(h).padStart(2,'0')+':'+mi+' '+ampm;
 }
-
 function getHour(ts){
   if(!ts) return -1;
   var s = String(ts).replace('T',' ').replace('Z','');
   var m = s.match(/(\d{2}):(\d{2}):/);
   return m ? parseInt(m[1]) + parseInt(m[2])/60 : -1;
 }
-
 function toggleDateMode(){
   var mode = document.getElementById('dateMode').value;
   document.getElementById('filterDateTo').style.display = mode==='range'?'block':'none';
@@ -279,7 +244,6 @@ function clearDates(){
   document.getElementById('filterDateTo').value = '';
   applyFilters();
 }
-
 function applyFilters(){
   const name = document.getElementById('filterName').value.toLowerCase();
   const dest = document.getElementById('filterDest').value.toLowerCase();
@@ -287,10 +251,6 @@ function applyFilters(){
   const date = document.getElementById('filterDate').value;
   const dateTo = document.getElementById('filterDateTo').value;
   const mode = document.getElementById('dateMode').value;
-
-  var dupMode = document.getElementById('filterDuplicate').value;
-
-  // First apply basic filters
   var base = allRecords.filter(r => {
     const matchName = !name || (r.Name||'').toLowerCase().includes(name);
     const matchDest = !dest || (r.Destination||'').toLowerCase().includes(dest);
@@ -302,28 +262,9 @@ function applyFilters(){
     }
     return matchName && matchDest && matchType && matchDate;
   });
-
-  // Apply duplicate filter
-  if(dupMode){
-    var getKey = function(r){
-      var n = (r.Name||'').trim();
-      if(dupMode === 'dup_name') return n.toLowerCase();
-      var parts = n.split(' ').filter(Boolean);
-      if(dupMode === 'dup_first') return (parts[0]||'').toLowerCase();
-      if(dupMode === 'dup_last') return (parts[parts.length-1]||'').toLowerCase();
-      return n.toLowerCase();
-    };
-    // Count occurrences
-    var counts = {};
-    base.forEach(function(r){ var k=getKey(r); counts[k]=(counts[k]||0)+1; });
-    // Only keep records with count > 1
-    filtered = base.filter(function(r){ return counts[getKey(r)] > 1; });
-  } else {
-    filtered = base;
-  }
+  filtered = base;
   renderTable();
 }
-
 function updateSummary(){
   var name = document.getElementById('filterName').value.trim();
   if(!name || filtered.length===0){ document.getElementById('empSummary').style.display='none'; return; }
@@ -355,7 +296,6 @@ function updateSummary(){
   ).join('');
   document.getElementById('empSummary').style.display='block';
 }
-
 function renderTable(){
   document.getElementById('recordCount').textContent = filtered.length+' record'+(filtered.length!==1?'s':'');
   updateSummary();
@@ -379,16 +319,9 @@ function renderTable(){
          <div class="no-photo" style="display:none">👤</div>`
       :'<div class="no-photo">👤</div>';
     const lat=r.Latitude||'', lng=r.Longitude||'';
-    // Detect simulated/fake GPS coordinates
-    const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700) ||
-                      (parseFloat(lat)===14.628533);
+    const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700)||(parseFloat(lat)===14.628533);
     const addr = isFakeGPS ? null : (r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS');
-    // Check if this record is a duplicate
-    var isDup = document.getElementById('filterDuplicate').value !== '';
-    var rowStyle = isDup ? ' style="background:#fff7ed"' : '';
-    var recId = (r.Name||'') + '_' + (r.Timestamp||'') + '_' + i;
-    var safeId = recId.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<tr${rowStyle}>
+    return `<tr>
       <td><input type="checkbox" class="row-check" data-idx="${i}" style="cursor:pointer;width:16px;height:16px"></td>
       <td>${photo}</td>
       <td><strong>${r.Name||'—'}</strong></td>
@@ -411,8 +344,10 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+  document.querySelectorAll('.row-check').forEach(function(c){
+    c.addEventListener('change', updateSelectionCount);
+  });
 }
-
 function toggleSelectAll(cb){
   document.querySelectorAll('.row-check').forEach(function(c){ c.checked = cb.checked; });
   updateSelectionCount();
@@ -426,12 +361,11 @@ function updateSelectionCount(){
 }
 function getSelectedRecords(){
   var checked = document.querySelectorAll('.row-check:checked');
-  if(checked.length === 0) return filtered; // if none selected, use all filtered
+  if(checked.length === 0) return filtered;
   var indices = [];
   checked.forEach(function(c){ indices.push(parseInt(c.getAttribute('data-idx'))); });
   return indices.map(function(i){ return filtered[i]; }).filter(Boolean);
 }
-
 function openLightbox(src,name){
   document.getElementById('lbImg').src=src;
   document.getElementById('lbName').textContent=name;
@@ -441,7 +375,6 @@ function closeLightbox(){
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lbImg').src='';
 }
-
 function splitTs(raw){
   var f=formatTs(raw);
   if(!f||f==='—') return {date:'',time:''};
@@ -453,8 +386,7 @@ function printPreview(){
   var selCnt = document.querySelectorAll('.row-check:checked').length;
   if(!toPrint.length){ alert('No records to print.'); return; }
   if(selCnt > 0 && !confirm('Print ' + selCnt + ' selected record(s)?')) return;
-  var filtered = toPrint;
-
+  var records = toPrint;
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
   html += '<title>Attendance Report — Photoline</title>';
   html += '<style>';
@@ -479,74 +411,44 @@ function printPreview(){
   html += '.card-ts { font-size:8px; color:#475569; font-family:monospace; }';
   html += '.card-addr { font-size:8px; color:#64748b; margin-top:0px; }';
   html += '.no-gps { font-size:9px; color:#f59e0b; font-weight:600; }';
-  html += '@media print {';
-  html += '  body { margin:0; }';
-  html += '  .page { padding:8mm; }';
-  html += '  .no-print { display:none !important; }';
-  html += '  .card { page-break-inside:avoid; }';
-  html += '}';
+  html += '@media print { body{margin:0} .page{padding:8mm} .no-print{display:none!important} .card{page-break-inside:avoid} }';
   html += '</style></head><body>';
-
-  // Group records into pages of 6
   var now = new Date().toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'});
   var filterName = document.getElementById('filterName').value || 'All Employees';
   var filterDate = document.getElementById('filterDate').value || '';
-
-  for(var i=0; i<filtered.length; i+=6){
-    var chunk = filtered.slice(i, i+6);
-    html += '<div class="page">';
-    html += '<div class="report-header">';
+  for(var i=0; i<records.length; i+=6){
+    var chunk = records.slice(i, i+6);
+    html += '<div class="page"><div class="report-header">';
     html += '<h1>PHOTOLINE — Field Duty Timesheet</h1>';
-    html += '<p>Search: ' + filterName + (filterDate ? ' | Date: ' + filterDate : '') + ' | Printed: ' + now + ' | Page ' + (Math.floor(i/6)+1) + ' of ' + Math.ceil(filtered.length/6) + '</p>';
-    html += '</div>';
-    html += '<div class="grid">';
-
+    html += '<p>'+filterName+(filterDate?' | Date: '+filterDate:'')+' | Printed: '+now+' | Page '+(Math.floor(i/6)+1)+' of '+Math.ceil(records.length/6)+'</p>';
+    html += '</div><div class="grid">';
     chunk.forEach(function(r){
-      var thumbUrl = '';
-      var photoLink = r['Photo Link'] || '';
+      var thumbUrl='', photoLink=r['Photo Link']||'';
       if(photoLink.includes('id=')){
-        var fid = photoLink.split('id=')[1];
-        thumbUrl = 'https://drive.google.com/thumbnail?id=' + fid + '&sz=w600';
+        var fid=photoLink.split('id=')[1];
+        thumbUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w600';
       }
-      var isIn = r.Type === 'Log In';
-      var badge = isIn
-        ? '<span class="badge-in">✅ Log In</span>'
-        : '<span class="badge-out">🚪 Log Out</span>';
-      var lat = r.Latitude||'', lng = r.Longitude||'';
-      var isFake = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700);
-      var addr = (!isFake && r.Address && /[a-zA-Z]/.test(r.Address))
-        ? r.Address : '<span class="no-gps">⚠️ No GPS</span>';
-
-      html += '<div class="card">';
-      if(thumbUrl){
-        html += '<div class="card-photo-wrap"><img src="' + thumbUrl + '" alt="selfie"></div>';
-      } else {
-        html += '<div class="card-no-photo">👤</div>';
-      }
-      html += '<div class="card-info">';
-      html += '<div class="card-top"><span class="card-name">' + (r.Name||'—') + '</span>' + badge + '</div>';
-      html += '<div class="card-dest">📍 ' + (r.Destination||'—') + '</div>';
-      html += '<div class="card-ts">' + formatTs(r.Timestamp) + '</div>';
-      html += '<div class="card-addr">' + (addr==='<span class=\"no-gps\">⚠️ No GPS</span>'?'⚠️ No GPS':addr) + '</div>';
-      html += '</div></div>';
+      var isIn=r.Type==='Log In';
+      var badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
+      var lat=r.Latitude||'', lng=r.Longitude||'';
+      var isFake=(parseFloat(lat)===14.676041&&parseFloat(lng)===121.043700);
+      var addr=(!isFake&&r.Address&&/[a-zA-Z]/.test(r.Address))?r.Address:'⚠️ No GPS';
+      html+='<div class="card">';
+      html+=thumbUrl?'<div class="card-photo-wrap"><img src="'+thumbUrl+'" alt="selfie"></div>':'<div class="card-no-photo">👤</div>';
+      html+='<div class="card-info"><div class="card-top"><span class="card-name">'+(r.Name||'—')+'</span>'+badge+'</div>';
+      html+='<div class="card-dest">📍 '+(r.Destination||'—')+'</div>';
+      html+='<div class="card-ts">'+formatTs(r.Timestamp)+'</div>';
+      html+='<div class="card-addr">'+addr+'</div></div></div>';
     });
-
-    html += '</div></div>';
+    html+='</div></div>';
   }
-
-  html += '<div class="no-print" style="position:fixed;top:20px;right:20px;display:flex;gap:10px">';
-  html += '<button onclick="window.print()" style="background:#1e40af;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>';
-  html += '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">✕ Close</button>';
-  html += '</div>';
-  html += '</body></html>';
-
-  var win = window.open('','_blank');
-  if(win){
-    win.document.write(html);
-    win.document.close();
-  }
+  html+='<div class="no-print" style="position:fixed;top:20px;right:20px;display:flex;gap:10px">';
+  html+='<button onclick="window.print()" style="background:#1e40af;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>';
+  html+='<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">✕ Close</button>';
+  html+='</div></body></html>';
+  var win=window.open('','_blank');
+  if(win){ win.document.write(html); win.document.close(); }
 }
-
 function exportCSV(){
   var toExport = getSelectedRecords();
   var selCount = document.querySelectorAll('.row-check:checked').length;
@@ -556,15 +458,7 @@ function exportCSV(){
   const rows=[headers,...toExport.map(r=>{
     var ts=splitTs(r.Timestamp);
     var type=r.Type==='Log In'?'IN':r.Type==='Log Out'?'OUT':r.Type||'';
-    return[
-      '"'+(r.Name||'')+'"',
-      '"'+(r.Destination||'')+'"',
-      '"'+ts.date+'"',
-      '"'+type+'"',
-      '"'+ts.time.trim()+'"',
-      '"'+(r.Address||'')+'"',
-      '"'+(r['Photo Link']||'')+'"',
-    ];
+    return['"'+(r.Name||'')+'"','"'+(r.Destination||'')+'"','"'+ts.date+'"','"'+type+'"','"'+ts.time.trim()+'"','"'+(r.Address||'')+'"','"'+(r['Photo Link']||'')+'"'];
   })];
   const csv=rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
   const a=document.createElement('a');
