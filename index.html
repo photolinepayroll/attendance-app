@@ -1095,7 +1095,21 @@ function takePhoto(){
   document.getElementById('camBtnTxt').textContent = '🔄  Retake Selfie';
 
   closeCamera();
-  startPhotoTimer();
+  // Disable submit for 5 seconds first
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ &nbsp;Please wait...';
+  var wait = 5;
+  var waitInterval = setInterval(function(){
+    wait--;
+    if(wait > 0){
+      btn.innerHTML = '⏳ &nbsp;Please wait ' + wait + 's...';
+    } else {
+      clearInterval(waitInterval);
+      btn.disabled = false;
+      startPhotoTimer(); // Start 30s countdown after 5s delay
+    }
+  }, 1000);
 }
 
 // ── Submit ──
