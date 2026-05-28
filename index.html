@@ -747,22 +747,31 @@ function startGPS(){
     async pos => {
       gpsBlocked = false;
       gps = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) };
-      setGPSUI('loading', '📍 Getting full address...');
-      const addr = await reverseGeocode(gps.lat, gps.lng);
-      if(addr) gps.address = addr;
-      gpsReady = true;
+      setGPSUI('loading', '📍 Getting address... please wait');
+      checkInputs(); // Keep disabled — waiting for address
+
+      // Try address lookup — retry once if fails
+      let addr = await reverseGeocode(gps.lat, gps.lng);
+      if(!addr){
+        setGPSUI('loading', '📍 Retrying address...');
+        await new Promise(r => setTimeout(r, 2000));
+        addr = await reverseGeocode(gps.lat, gps.lng);
+      }
+
+      if(addr){
+        gps.address = addr;
+      }
+      gpsReady = true; // Enable only after address attempt
       const fullAddr = addr
         ? addr
         : `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
       const disp = `📍 ${fullAddr}`;
       setGPSUI('active', disp);
       document.getElementById('hudGps').textContent = disp;
-      // Remove GPS warning if shown
       const warn = document.getElementById('gpsWarn');
       if(warn) warn.style.display = 'none';
-      // Show mini map
       showFormMap(gps.lat, gps.lng);
-      checkInputs(); // Enable buttons when GPS ready
+      checkInputs(); // NOW enable buttons — address ready
     },
     err => {
 
