@@ -363,7 +363,7 @@ function renderTable(){
     document.getElementById('tableArea').innerHTML='<div class="empty"><div class="icon">📋</div>No records found.</div>';
     return;
   }
-  const rows=filtered.map(r=>{
+  const rows=filtered.map((r,i)=>{
     const isIn=r.Type==='Log In';
     const badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
     var thumbUrl='',fullUrl=r['Photo Link']||'';
