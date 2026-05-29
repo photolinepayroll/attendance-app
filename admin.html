@@ -388,11 +388,11 @@ function closeLightbox(){
   document.getElementById('lbImg').src='';
 }
 var _geoCache = {};
-function reverseGeocodeAdmin(lat, lng, elemId, retry){
+function reverseGeocodeAdmin(lat, lng, elemId){
   var key = lat.toFixed(5)+','+lng.toFixed(5);
   if(_geoCache[key]){ setAddrElem(elemId, _geoCache[key]); return; }
 
-  // Use JSONP to call Apps Script — avoids CORS issues
+  // JSONP via Apps Script — only method that works from GitHub Pages
   var cbName = '_geo_'+Date.now()+'_'+Math.floor(Math.random()*9999);
   var script = document.createElement('script');
   var done = false;
@@ -400,9 +400,9 @@ function reverseGeocodeAdmin(lat, lng, elemId, retry){
     if(done) return;
     done = true;
     delete window[cbName];
-    document.body.removeChild(script);
-    fetchNominatim(lat, lng, elemId, key, retry);
-  }, 8000);
+    try{ document.body.removeChild(script); }catch(e){}
+    setAddrElem(elemId, 'GPS');
+  }, 10000);
   window[cbName] = function(data){
     if(done) return;
     done = true;
@@ -413,45 +413,11 @@ function reverseGeocodeAdmin(lat, lng, elemId, retry){
       _geoCache[key] = data.address;
       setAddrElem(elemId, data.address);
     } else {
-      fetchNominatim(lat, lng, elemId, key, retry);
+      setAddrElem(elemId, 'GPS');
     }
   };
   script.src = SCRIPT_URL + '?action=geocode&lat='+lat+'&lng='+lng+'&callback='+cbName;
   document.body.appendChild(script);
-}
-
-function fetchNominatim(lat, lng, elemId, key, retry){
-  var controller = new AbortController();
-  var timer = setTimeout(function(){ controller.abort(); }, 7000);
-  fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+lat+'&lon='+lng+'&zoom=17&addressdetails=1',
-    {headers:{'Accept-Language':'en'}, signal: controller.signal})
-    .then(function(r){ clearTimeout(timer); return r.json(); })
-    .then(function(data){
-      var d = data.address||{};
-      var parts = [
-        d.road||d.pedestrian||d.footway||d.neighbourhood,
-        d.suburb||d.village||d.town||d.city_district,
-        d.city||d.town||d.municipality
-      ].filter(Boolean);
-      var addr = parts.length ? parts.join(', ')
-        : (data.display_name ? data.display_name.split(',').slice(0,3).join(',').trim() : '');
-      if(addr){
-        _geoCache[key] = addr;
-        setAddrElem(elemId, addr);
-      } else if(!retry){
-        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 4000);
-      } else {
-        setAddrElem(elemId, 'GPS');
-      }
-    })
-    .catch(function(){
-      clearTimeout(timer);
-      if(!retry){
-        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 4000);
-      } else {
-        setAddrElem(elemId, 'GPS');
-      }
-    });
 }
 function setAddrElem(elemId, text){
   var el = document.getElementById(elemId);
