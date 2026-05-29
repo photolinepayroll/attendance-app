@@ -352,8 +352,9 @@ function renderTable(){
       <tbody>${rows}</tbody>
     </table>`;
   // Now DOM is ready — fire geocode requests with stagger to avoid rate limiting
+  // Nominatim allows max 1 req/sec — use 1100ms stagger
   geoQueue.forEach(function(q, idx){
-    setTimeout(function(){ reverseGeocodeAdmin(q.lat, q.lng, q.id); }, idx * 300);
+    setTimeout(function(){ reverseGeocodeAdmin(q.lat, q.lng, q.id); }, idx * 1100);
   });
   document.querySelectorAll('.row-check').forEach(function(c){
     c.addEventListener('change', updateSelectionCount);
@@ -387,12 +388,14 @@ function closeLightbox(){
   document.getElementById('lbImg').src='';
 }
 var _geoCache = {};
-function reverseGeocodeAdmin(lat, lng, elemId){
+function reverseGeocodeAdmin(lat, lng, elemId, retry){
   var key = lat.toFixed(5)+','+lng.toFixed(5);
   if(_geoCache[key]){ setAddrElem(elemId, _geoCache[key]); return; }
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, 6000);
   fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+lat+'&lon='+lng+'&zoom=17&addressdetails=1',
-    {headers:{'Accept-Language':'en'}})
-    .then(function(r){ return r.json(); })
+    {headers:{'Accept-Language':'en'}, signal: controller.signal})
+    .then(function(r){ clearTimeout(timer); return r.json(); })
     .then(function(data){
       var d = data.address||{};
       var parts = [
@@ -401,11 +404,25 @@ function reverseGeocodeAdmin(lat, lng, elemId){
         d.city||d.town||d.municipality
       ].filter(Boolean);
       var addr = parts.length ? parts.join(', ')
-        : (data.display_name ? data.display_name.split(',').slice(0,3).join(',').trim() : 'GPS');
-      _geoCache[key] = addr;
-      setAddrElem(elemId, addr);
+        : (data.display_name ? data.display_name.split(',').slice(0,3).join(',').trim() : '');
+      if(addr){
+        _geoCache[key] = addr;
+        setAddrElem(elemId, addr);
+      } else if(!retry){
+        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 3000);
+      } else {
+        setAddrElem(elemId, 'GPS');
+      }
     })
-    .catch(function(){ setAddrElem(elemId, 'GPS'); });
+    .catch(function(){
+      clearTimeout(timer);
+      if(!retry){
+        // Retry once after 4 seconds
+        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 4000);
+      } else {
+        setAddrElem(elemId, 'GPS');
+      }
+    });
 }
 function setAddrElem(elemId, text){
   var el = document.getElementById(elemId);
