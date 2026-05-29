@@ -332,7 +332,7 @@ function renderTable(){
         ?`<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
              style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
              <span>📍</span><span style="word-break:break-word">${addr}</span></a>`
-        :`<span style="color:#94a3b8;font-size:12px;font-style:italic">⚠️ No GPS</span>`}</td>
+        :`<span style="color:#94a3b8;font-size:12px;font-style:italic">GPS</span>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('tableArea').innerHTML=`
@@ -432,13 +432,13 @@ function printPreview(){
       var badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
       var lat=r.Latitude||'', lng=r.Longitude||'';
       var isFake=(parseFloat(lat)===14.676041&&parseFloat(lng)===121.043700);
-      var addr=(!isFake&&r.Address&&/[a-zA-Z]/.test(r.Address))?r.Address:'⚠️ No GPS';
+      var addr=(!isFake&&r.Address&&/[a-zA-Z]/.test(r.Address))?r.Address:'GPS';
       html+='<div class="card">';
       html+=thumbUrl?'<div class="card-photo-wrap"><img src="'+thumbUrl+'" alt="selfie"></div>':'<div class="card-no-photo">👤</div>';
       html+='<div class="card-info"><div class="card-top"><span class="card-name">'+(r.Name||'—')+'</span>'+badge+'</div>';
       html+='<div class="card-dest">📍 '+(r.Destination||'—')+'</div>';
       html+='<div class="card-ts">'+formatTs(r.Timestamp)+'</div>';
-      html+='<div class="card-addr">'+addr+'</div></div></div>';
+      html+='<div class="card-addr">📍 '+addr+'</div></div></div>';
     });
     html+='</div></div>';
   }
