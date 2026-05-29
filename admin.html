@@ -303,6 +303,7 @@ function renderTable(){
     document.getElementById('tableArea').innerHTML='<div class="empty"><div class="icon">📋</div>No records found.</div>';
     return;
   }
+  const geoQueue = [];
   const rows=filtered.map((r,i)=>{
     const isIn=r.Type==='Log In';
     const badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
@@ -320,7 +321,17 @@ function renderTable(){
       :'<div class="no-photo">👤</div>';
     const lat=r.Latitude||'', lng=r.Longitude||'';
     const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700)||(parseFloat(lat)===14.628533);
-    const addr = isFakeGPS ? null : (r.Address&&/[a-zA-Z]/.test(r.Address)?r.Address:'GPS');
+    const hasGPS = !isFakeGPS && lat && lng;
+    const savedAddr = r.Address&&/[a-zA-Z]/.test(r.Address) ? r.Address : null;
+    const addrId = 'addr-'+i;
+    const addrCell = hasGPS
+      ? `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
+             id="${addrId}"
+             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
+             <span>📍</span><span style="word-break:break-word">${savedAddr || '<em style=\'color:#94a3b8\'>Loading...</em>'}</span></a>`
+      : `<span style="color:#94a3b8;font-size:12px;font-style:italic">GPS</span>`;
+    // Queue geocode — run AFTER DOM is updated
+    if(hasGPS && !savedAddr) geoQueue.push({lat:parseFloat(lat), lng:parseFloat(lng), id:addrId});
     return `<tr>
       <td><input type="checkbox" class="row-check" data-idx="${i}" style="cursor:pointer;width:16px;height:16px"></td>
       <td>${photo}</td>
@@ -328,11 +339,7 @@ function renderTable(){
       <td>${r.Destination||'—'}</td>
       <td>${badge}</td>
       <td class="ts-cell">${formatTs(r.Timestamp)}</td>
-      <td>${!isFakeGPS&&lat&&lng
-        ?`<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
-             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
-             <span>📍</span><span style="word-break:break-word">${addr}</span></a>`
-        :`<span style="color:#94a3b8;font-size:12px;font-style:italic">GPS</span>`}</td>
+      <td>${addrCell}</td>
     </tr>`;
   }).join('');
   document.getElementById('tableArea').innerHTML=`
@@ -344,6 +351,10 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+  // Now DOM is ready — fire geocode requests with stagger to avoid rate limiting
+  geoQueue.forEach(function(q, idx){
+    setTimeout(function(){ reverseGeocodeAdmin(q.lat, q.lng, q.id); }, idx * 300);
+  });
   document.querySelectorAll('.row-check').forEach(function(c){
     c.addEventListener('change', updateSelectionCount);
   });
@@ -374,6 +385,31 @@ function openLightbox(src,name){
 function closeLightbox(){
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lbImg').src='';
+}
+var _geoCache = {};
+function reverseGeocodeAdmin(lat, lng, elemId){
+  var key = lat.toFixed(5)+','+lng.toFixed(5);
+  if(_geoCache[key]){ setAddrElem(elemId, _geoCache[key]); return; }
+  fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+lat+'&lon='+lng+'&zoom=17&addressdetails=1',
+    {headers:{'Accept-Language':'en'}})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var d = data.address||{};
+      var parts = [
+        d.road||d.pedestrian||d.footway||d.neighbourhood,
+        d.suburb||d.village||d.town||d.city_district,
+        d.city||d.town||d.municipality
+      ].filter(Boolean);
+      var addr = parts.length ? parts.join(', ')
+        : (data.display_name ? data.display_name.split(',').slice(0,3).join(',').trim() : 'GPS');
+      _geoCache[key] = addr;
+      setAddrElem(elemId, addr);
+    })
+    .catch(function(){ setAddrElem(elemId, 'GPS'); });
+}
+function setAddrElem(elemId, text){
+  var el = document.getElementById(elemId);
+  if(el){ var s=el.querySelector('span:last-child'); if(s) s.innerHTML=text; }
 }
 function splitTs(raw){
   var f=formatTs(raw);
@@ -432,7 +468,7 @@ function printPreview(){
       var badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
       var lat=r.Latitude||'', lng=r.Longitude||'';
       var isFake=(parseFloat(lat)===14.676041&&parseFloat(lng)===121.043700);
-      var addr=(!isFake&&r.Address&&/[a-zA-Z]/.test(r.Address))?r.Address:'GPS';
+      var addr=(!isFake&&r.Address&&/[a-zA-Z]/.test(r.Address))?r.Address:((!isFake&&r.Latitude&&r.Longitude)?'GPS':'GPS');
       html+='<div class="card">';
       html+=thumbUrl?'<div class="card-photo-wrap"><img src="'+thumbUrl+'" alt="selfie"></div>':'<div class="card-no-photo">👤</div>';
       html+='<div class="card-info"><div class="card-top"><span class="card-name">'+(r.Name||'—')+'</span>'+badge+'</div>';
