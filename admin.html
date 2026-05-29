@@ -391,8 +391,28 @@ var _geoCache = {};
 function reverseGeocodeAdmin(lat, lng, elemId, retry){
   var key = lat.toFixed(5)+','+lng.toFixed(5);
   if(_geoCache[key]){ setAddrElem(elemId, _geoCache[key]); return; }
+
+  // Use Apps Script as proxy — avoids Nominatim rate limiting
+  var proxyUrl = SCRIPT_URL + '?action=geocode&lat='+lat+'&lng='+lng;
+  fetch(proxyUrl)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.address){
+        _geoCache[key] = data.address;
+        setAddrElem(elemId, data.address);
+      } else {
+        // Fallback: try Nominatim directly
+        fetchNominatim(lat, lng, elemId, key, retry);
+      }
+    })
+    .catch(function(){
+      fetchNominatim(lat, lng, elemId, key, retry);
+    });
+}
+
+function fetchNominatim(lat, lng, elemId, key, retry){
   var controller = new AbortController();
-  var timer = setTimeout(function(){ controller.abort(); }, 6000);
+  var timer = setTimeout(function(){ controller.abort(); }, 7000);
   fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+lat+'&lon='+lng+'&zoom=17&addressdetails=1',
     {headers:{'Accept-Language':'en'}, signal: controller.signal})
     .then(function(r){ clearTimeout(timer); return r.json(); })
@@ -409,7 +429,7 @@ function reverseGeocodeAdmin(lat, lng, elemId, retry){
         _geoCache[key] = addr;
         setAddrElem(elemId, addr);
       } else if(!retry){
-        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 3000);
+        setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 4000);
       } else {
         setAddrElem(elemId, 'GPS');
       }
@@ -417,7 +437,6 @@ function reverseGeocodeAdmin(lat, lng, elemId, retry){
     .catch(function(){
       clearTimeout(timer);
       if(!retry){
-        // Retry once after 4 seconds
         setTimeout(function(){ reverseGeocodeAdmin(lat, lng, elemId, true); }, 4000);
       } else {
         setAddrElem(elemId, 'GPS');
