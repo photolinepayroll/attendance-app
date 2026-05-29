@@ -1234,15 +1234,29 @@ function submitAttendance(){
   if(!dest){ showFormError('Please enter your destination/location.'); document.getElementById('empDest').focus(); return; }
   if(!capturedImg){ showFormError('Please take a selfie first.'); return; }
 
-  // If GPS not ready, use fallback silently
+  // If GPS not ready
   if(!gpsReady || !gps){
     showFormError('📍 Location is required! Please enable your GPS/Location and try again.');
     return;
   }
-  // Double-check: block if fake GPS somehow passed through
-  if(gps && gps.acc < 2 && gps.acc !== null){
+  // ── Fake GPS checks ──
+  if(gps.mocked === true){
     showFormError('🚫 Fake GPS detected! Please disable mock location apps and try again.');
     return;
+  }
+  if(gps.acc !== null && gps.acc !== undefined && gps.acc < 2){
+    showFormError('🚫 Fake GPS detected! Accuracy too perfect. Disable mock location apps.');
+    return;
+  }
+  const knownFake = [
+    [0, 0], [14.676041, 121.043700], [37.4220, -122.0841],
+    [35.6762, 139.6503], [51.5074, -0.1278], [48.8566, 2.3522]
+  ];
+  for(const [fLat, fLng] of knownFake){
+    if(Math.abs(gps.lat - fLat) < 0.01 && Math.abs(gps.lng - fLng) < 0.01){
+      showFormError('🚫 Fake GPS detected! Your location appears to be spoofed.');
+      return;
+    }
   }
 
   const d = new Date();
