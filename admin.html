@@ -392,22 +392,32 @@ function reverseGeocodeAdmin(lat, lng, elemId, retry){
   var key = lat.toFixed(5)+','+lng.toFixed(5);
   if(_geoCache[key]){ setAddrElem(elemId, _geoCache[key]); return; }
 
-  // Use Apps Script as proxy — avoids Nominatim rate limiting
-  var proxyUrl = SCRIPT_URL + '?action=geocode&lat='+lat+'&lng='+lng;
-  fetch(proxyUrl)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(data.address){
-        _geoCache[key] = data.address;
-        setAddrElem(elemId, data.address);
-      } else {
-        // Fallback: try Nominatim directly
-        fetchNominatim(lat, lng, elemId, key, retry);
-      }
-    })
-    .catch(function(){
+  // Use JSONP to call Apps Script — avoids CORS issues
+  var cbName = '_geo_'+Date.now()+'_'+Math.floor(Math.random()*9999);
+  var script = document.createElement('script');
+  var done = false;
+  var timer = setTimeout(function(){
+    if(done) return;
+    done = true;
+    delete window[cbName];
+    document.body.removeChild(script);
+    fetchNominatim(lat, lng, elemId, key, retry);
+  }, 8000);
+  window[cbName] = function(data){
+    if(done) return;
+    done = true;
+    clearTimeout(timer);
+    delete window[cbName];
+    try{ document.body.removeChild(script); }catch(e){}
+    if(data && data.address){
+      _geoCache[key] = data.address;
+      setAddrElem(elemId, data.address);
+    } else {
       fetchNominatim(lat, lng, elemId, key, retry);
-    });
+    }
+  };
+  script.src = SCRIPT_URL + '?action=geocode&lat='+lat+'&lng='+lng+'&callback='+cbName;
+  document.body.appendChild(script);
 }
 
 function fetchNominatim(lat, lng, elemId, key, retry){
