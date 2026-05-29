@@ -737,6 +737,43 @@ function retryGPS(){
   startGPS();
 }
 
+// ── Fake GPS Detection ──
+function isMockLocation(pos){
+  // 1. Android Chrome exposes mocked property directly
+  if(pos.coords.mocked === true) return true;
+
+  // 2. Suspiciously perfect accuracy (fake GPS apps often return exactly 0 or 1)
+  if(pos.coords.accuracy !== null && pos.coords.accuracy < 2) return true;
+
+  // 3. Known fake GPS default coordinates (Null Island, emulator defaults)
+  const lat = pos.coords.latitude, lng = pos.coords.longitude;
+  if(lat === 0 && lng === 0) return true;
+  if(Math.abs(lat - 14.676041) < 0.0001 && Math.abs(lng - 121.043700) < 0.0001) return true;
+
+  // 4. Speed check — impossible speed between last known position
+  if(gps && gps.lat && gps.lng){
+    const dLat = lat - gps.lat, dLng = lng - gps.lng;
+    const distKm = Math.sqrt(dLat*dLat + dLng*dLng) * 111;
+    const elapsed = (Date.now() - (gps.ts || Date.now())) / 3600000; // hours
+    if(elapsed > 0 && distKm / elapsed > 500) return true; // >500 km/h = impossible
+  }
+
+  return false;
+}
+
+function showFakeGPSWarning(){
+  gpsReady = false;
+  gps = null;
+  setGPSUI('error', '🚫 Fake GPS Detected! Please disable mock location apps.');
+  const warn = document.getElementById('gpsWarn');
+  if(warn){
+    warn.style.display = 'flex';
+    warn.style.background = '#7f1d1d';
+    document.getElementById('gpsWarnMsg').textContent = '🚫 Fake/Mock GPS detected! Disable any fake location apps and try again.';
+  }
+  checkInputs();
+}
+
 function startGPS(){
   if(!navigator.geolocation){
     gpsBlocked = true;
@@ -747,9 +784,21 @@ function startGPS(){
   navigator.geolocation.watchPosition(
     async pos => {
       gpsBlocked = false;
-      gps = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) };
+
+      // ── Fake GPS Check ──
+      if(isMockLocation(pos)){
+        showFakeGPSWarning();
+        return;
+      }
+
+      gps = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        acc: Math.round(pos.coords.accuracy),
+        ts: Date.now()
+      };
       setGPSUI('loading', '📍 Getting address... please wait');
-      checkInputs(); // Keep disabled — waiting for address
+      checkInputs();
 
       // Try address lookup — retry once if fails
       let addr = await reverseGeocode(gps.lat, gps.lng);
@@ -762,7 +811,7 @@ function startGPS(){
       if(addr){
         gps.address = addr;
       }
-      gpsReady = true; // Enable only after address attempt
+      gpsReady = true;
       const fullAddr = addr
         ? addr
         : `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
@@ -770,12 +819,11 @@ function startGPS(){
       setGPSUI('active', disp);
       document.getElementById('hudGps').textContent = disp;
       const warn = document.getElementById('gpsWarn');
-      if(warn) warn.style.display = 'none';
+      if(warn){ warn.style.display = 'none'; warn.style.background = ''; }
       showFormMap(gps.lat, gps.lng);
-      checkInputs(); // NOW enable buttons — address ready
+      checkInputs();
     },
     err => {
-
       gpsBlocked = true;
       gpsReady = false;
       gps = null;
@@ -1071,10 +1119,10 @@ function takePhoto(){
   ctx.font = `${gpsFs}px -apple-system,sans-serif`;
   ctx.fillStyle = '#4ade80';
   // Detect fake/simulated GPS
-  const isFake = gps && (
+  const isFake = !gps || (gps && (
     (Math.abs(gps.lat - 14.676041) < 0.001 && Math.abs(gps.lng - 121.043700) < 0.001) ||
-    gps.sim === true
-  );
+    gps.sim === true || gps.mocked === true
+  ));
   const gpsLine = (!gps || isFake)
     ? '⚠️ No GPS — Location not available'
     : (gps.address
@@ -1189,6 +1237,11 @@ function submitAttendance(){
   // If GPS not ready, use fallback silently
   if(!gpsReady || !gps){
     showFormError('📍 Location is required! Please enable your GPS/Location and try again.');
+    return;
+  }
+  // Double-check: block if fake GPS somehow passed through
+  if(gps && gps.acc < 2 && gps.acc !== null){
+    showFormError('🚫 Fake GPS detected! Please disable mock location apps and try again.');
     return;
   }
 
