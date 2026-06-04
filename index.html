@@ -971,17 +971,72 @@ async function openCamera(){
     if(warn) warn.style.display = 'flex';
     return;
   }
-  document.getElementById('camOverlay').classList.remove('hidden');
+
+  // ── CAMERA FIX: Warn in-app browsers (FB Messenger, Viber, etc.) ──
+  if(isInAppBrowser()){
+    var proceed = confirm('⚠️ Maaaring hindi gumana ang camera sa loob ng Messenger/Viber.\n\nI-tap ang ⋮ → "Open in Chrome" o "Open in Safari" para sa pinakamahusay na resulta.\n\nI-click ang OK para subukang mag-open ng camera dito.');
+    if(!proceed){
+      var mw = document.getElementById('formMapWrap');
+      if(mw) mw.style.visibility = 'visible';
+      return;
+    }
+  }
+
+  // ── CAMERA FIX: Check if getUserMedia is supported ──
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    var mw2 = document.getElementById('formMapWrap');
+    if(mw2) mw2.style.visibility = 'visible';
+    alert('❌ Hindi sinusuportahan ang camera sa browser na ito.\n\nSubukan sa Chrome o Safari.');
+    return;
+  }
+
+  // ── CAMERA FIX: Show loading BEFORE stream starts ──
+  var overlay = document.getElementById('camOverlay');
+  var video = document.getElementById('camVideo');
+
+  // Show loading spinner inside overlay before stream loads
+  video.style.background = '#111';
+  video.style.display = 'block';
+  overlay.classList.remove('hidden');
+
+  // Show loading text in HUD
+  var hudGps = document.getElementById('hudGps');
+  if(hudGps) hudGps.textContent = '⏳ Ini-load ang camera...';
+
   try{
     camStream = await navigator.mediaDevices.getUserMedia({
       video:{ facingMode, width:{ideal:1080}, height:{ideal:1080} }, audio:false
     });
-    document.getElementById('camVideo').srcObject = camStream;
+    video.srcObject = camStream;
+
+    // ── CAMERA FIX: Explicitly call play() for iOS/in-app browsers ──
+    await video.play().catch(function(playErr){
+      console.warn('Video play() failed:', playErr);
+    });
+
     // Mirror only for front camera
-    document.getElementById('camVideo').style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+    video.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+
+    // Restore HUD GPS text
+    if(hudGps && gps){
+      var addr = gps.address ? gps.address : (gps.lat.toFixed(6) + ', ' + gps.lng.toFixed(6));
+      hudGps.textContent = '📍 ' + addr;
+    }
+
   } catch(e){
     closeCamera();
-    alert('Camera permission denied.\n\nPlease allow camera access in your browser settings.');
+    var errMsg = 'Camera permission denied.\n\nPlease allow camera access in your browser settings.';
+    // More specific error message
+    if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError'){
+      errMsg = '❌ Blocked ang camera!\n\nI-allow ang camera permission sa iyong browser settings, pagkatapos subukang muli.';
+    } else if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError'){
+      errMsg = '❌ Walang camera na nahanap sa device mo.';
+    } else if(e.name === 'NotReadableError' || e.name === 'TrackStartError'){
+      errMsg = '❌ Ginagamit na ang camera ng ibang app!\n\nIsara ang ibang apps na gumagamit ng camera (Zoom, Teams, etc.) at subukang muli.';
+    } else if(e.name === 'OverconstrainedError'){
+      errMsg = '❌ Hindi sinusuportahan ng camera ang requested na resolution.\n\nSubukang muli.';
+    }
+    alert(errMsg + '\n\nError: ' + e.name);
   }
 }
 function closeCamera(){
