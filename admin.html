@@ -356,16 +356,26 @@ function renderTable(){
     </tr>`;
   }).join('');
 
-  const paginationBar = totalPages > 1 ? `
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 20px;border-top:1px solid #f1f5f9;flex-wrap:wrap">
+  const pageOptions = Array.from({length:totalPages},(_,i)=>
+    `<option value="${i+1}" ${i+1===currentPage?'selected':''}>${i+1}</option>`
+  ).join('');
+
+  const paginationControls = totalPages > 1 ? `
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 20px;flex-wrap:wrap">
       <button onclick="goPage(1)" ${currentPage===1?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif" title="First">«</button>
       <button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">‹ Prev</button>
-      <span style="font-size:13px;font-weight:700;color:#475569">Page ${currentPage} of ${totalPages} <span style="color:#94a3b8;font-weight:600">(${start+1}–${Math.min(start+PAGE_SIZE,filtered.length)} of ${filtered.length})</span></span>
+      <span style="font-size:13px;font-weight:700;color:#475569;display:flex;align-items:center;gap:6px">
+        Page
+        <select onchange="goPage(parseInt(this.value))" style="padding:5px 8px;border-radius:7px;border:1.5px solid #e2e8f0;font-size:13px;font-weight:700;font-family:'Nunito',sans-serif;color:#1e40af;cursor:pointer;outline:none">${pageOptions}</select>
+        of ${totalPages}
+        <span style="color:#94a3b8;font-weight:600;font-size:12px">(${start+1}–${Math.min(start+PAGE_SIZE,filtered.length)} of ${filtered.length})</span>
+      </span>
       <button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">Next ›</button>
       <button onclick="goPage(${totalPages})" ${currentPage===totalPages?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif" title="Last">»</button>
     </div>` : '';
 
   document.getElementById('tableArea').innerHTML = `
+    ${totalPages > 1 ? `<div style="border-bottom:1px solid #f1f5f9">${paginationControls}</div>` : ''}
     <table>
       <thead><tr>
         <th style="width:36px"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor:pointer;width:16px;height:16px"></th>
@@ -374,7 +384,7 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${paginationBar}`;
+    ${totalPages > 1 ? `<div style="border-top:1px solid #f1f5f9">${paginationControls}</div>` : ''}`;
 
   geoQueue.forEach(function(q, idx){
     setTimeout(function(){ reverseGeocodeAdmin(q.lat, q.lng, q.id); }, idx * 1100);
