@@ -155,6 +155,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwO3NsLr82swi07k3XD
 const ADMIN_PASS = 'Photoline.201';
 let allRecords = [];
 let filtered = [];
+let currentPage = 1;
+const PAGE_SIZE = 50;
 function doLogin(){
   const pass = document.getElementById('passInput').value;
   if(pass === ADMIN_PASS){
@@ -269,6 +271,7 @@ function applyFilters(){
     return matchName && matchDest && matchType && matchDate;
   });
   filtered = base;
+  currentPage = 1;
   renderTable();
 }
 function updateSummary(){
@@ -303,43 +306,47 @@ function updateSummary(){
   document.getElementById('empSummary').style.display='block';
 }
 function renderTable(){
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if(currentPage > totalPages) currentPage = totalPages;
   document.getElementById('recordCount').textContent = filtered.length+' record'+(filtered.length!==1?'s':'');
   updateSummary();
   if(!filtered.length){
     document.getElementById('tableArea').innerHTML='<div class="empty"><div class="icon">📋</div>No records found.</div>';
     return;
   }
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageRecords = filtered.slice(start, start + PAGE_SIZE);
   const geoQueue = [];
-  const rows=filtered.map((r,i)=>{
-    const isIn=r.Type==='Log In';
-    const badge=isIn?'<span class="badge-in">✅ Log In</span>':'<span class="badge-out">🚪 Log Out</span>';
-    var thumbUrl='',fullUrl=r['Photo Link']||'';
+  const rows = pageRecords.map((r, i) => {
+    const globalIdx = start + i;
+    const isIn = r.Type === 'Log In';
+    const badge = isIn ? '<span class="badge-in">✅ Log In</span>' : '<span class="badge-out">🚪 Log Out</span>';
+    var thumbUrl = '', fullUrl = r['Photo Link'] || '';
     if(fullUrl.includes('id=')){
-      var fid=fullUrl.split('id=')[1];
-      thumbUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w120';
-      fullUrl='https://drive.google.com/thumbnail?id='+fid+'&sz=w800';
+      var fid = fullUrl.split('id=')[1];
+      thumbUrl = 'https://drive.google.com/thumbnail?id='+fid+'&sz=w120';
+      fullUrl  = 'https://drive.google.com/thumbnail?id='+fid+'&sz=w800';
     }
-    const photo=thumbUrl
-      ?`<img src="${thumbUrl}" class="photo-thumb" alt="selfie"
-           onerror="this.style.display='none';this.nextSibling.style.display='flex'"
-           onclick="openLightbox('${fullUrl}','${(r.Name||'').replace(/'/g,'')}')">
-         <div class="no-photo" style="display:none">👤</div>`
-      :'<div class="no-photo">👤</div>';
-    const lat=r.Latitude||'', lng=r.Longitude||'';
+    const photo = thumbUrl
+      ? `<img src="${thumbUrl}" class="photo-thumb" alt="selfie"
+             onerror="this.style.display='none';this.nextSibling.style.display='flex'"
+             onclick="openLightbox('${fullUrl}','${(r.Name||'').replace(/'/g,'')}')">
+           <div class="no-photo" style="display:none">👤</div>`
+      : '<div class="no-photo">👤</div>';
+    const lat = r.Latitude || '', lng = r.Longitude || '';
     const isFakeGPS = (parseFloat(lat)===14.676041 && parseFloat(lng)===121.043700)||(parseFloat(lat)===14.628533);
     const hasGPS = !isFakeGPS && lat && lng;
-    const savedAddr = r.Address&&/[a-zA-Z]/.test(r.Address) ? r.Address : null;
-    const addrId = 'addr-'+i;
+    const savedAddr = r.Address && /[a-zA-Z]/.test(r.Address) ? r.Address : null;
+    const addrId = 'addr-'+globalIdx;
     const addrCell = hasGPS
       ? `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17" target="_blank"
-             id="${addrId}"
-             style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
-             <span>📍</span><span style="word-break:break-word">${savedAddr || '<em style=\'color:#94a3b8\'>Loading...</em>'}</span></a>`
+               id="${addrId}"
+               style="color:#1e40af;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:flex-start;gap:5px">
+               <span>📍</span><span style="word-break:break-word">${savedAddr || '<em style=\'color:#94a3b8\'>Loading...</em>'}</span></a>`
       : `<span style="color:#94a3b8;font-size:12px;font-style:italic">GPS</span>`;
-    // Queue geocode — run AFTER DOM is updated
     if(hasGPS && !savedAddr) geoQueue.push({lat:parseFloat(lat), lng:parseFloat(lng), id:addrId});
     return `<tr>
-      <td><input type="checkbox" class="row-check" data-idx="${i}" style="cursor:pointer;width:16px;height:16px"></td>
+      <td><input type="checkbox" class="row-check" data-idx="${globalIdx}" style="cursor:pointer;width:16px;height:16px"></td>
       <td>${photo}</td>
       <td><strong>${r.Name||'—'}</strong></td>
       <td>${r.Destination||'—'}</td>
@@ -348,7 +355,17 @@ function renderTable(){
       <td>${addrCell}</td>
     </tr>`;
   }).join('');
-  document.getElementById('tableArea').innerHTML=`
+
+  const paginationBar = totalPages > 1 ? `
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 20px;border-top:1px solid #f1f5f9;flex-wrap:wrap">
+      <button onclick="goPage(1)" ${currentPage===1?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif" title="First">«</button>
+      <button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">‹ Prev</button>
+      <span style="font-size:13px;font-weight:700;color:#475569">Page ${currentPage} of ${totalPages} <span style="color:#94a3b8;font-weight:600">(${start+1}–${Math.min(start+PAGE_SIZE,filtered.length)} of ${filtered.length})</span></span>
+      <button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">Next ›</button>
+      <button onclick="goPage(${totalPages})" ${currentPage===totalPages?'disabled':''} style="padding:6px 12px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif" title="Last">»</button>
+    </div>` : '';
+
+  document.getElementById('tableArea').innerHTML = `
     <table>
       <thead><tr>
         <th style="width:36px"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor:pointer;width:16px;height:16px"></th>
@@ -356,15 +373,21 @@ function renderTable(){
         <th>Type</th><th>Timestamp</th><th>Address / Location</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
-  // Now DOM is ready — fire geocode requests with stagger to avoid rate limiting
-  // Nominatim allows max 1 req/sec — use 1100ms stagger
+    </table>
+    ${paginationBar}`;
+
   geoQueue.forEach(function(q, idx){
     setTimeout(function(){ reverseGeocodeAdmin(q.lat, q.lng, q.id); }, idx * 1100);
   });
   document.querySelectorAll('.row-check').forEach(function(c){
     c.addEventListener('change', updateSelectionCount);
   });
+}
+function goPage(p){
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  currentPage = Math.max(1, Math.min(p, totalPages));
+  renderTable();
+  document.querySelector('.table-wrap').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function toggleSelectAll(cb){
   document.querySelectorAll('.row-check').forEach(function(c){ c.checked = cb.checked; });
