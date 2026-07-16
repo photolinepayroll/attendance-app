@@ -1,0 +1,164 @@
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getActiveSheet();
+
+    var serverTs = Utilities.formatDate(
+      new Date(),
+      'Asia/Manila',
+      'yyyy-MM-dd HH:mm:ss'
+    );
+
+    // No synchronous Nominatim fallback here anymore — admin.html already
+    // resolves+displays addresses lazily from lat/lng when the dashboard is
+    // viewed. If the client hadn't resolved gps.address yet, this column
+    // just stays blank in the raw Sheet; the dashboard is unaffected.
+    var address = data.address || '';
+
+    var photoUrl = '';
+    if (data.photo) {
+      // Folder itself is link-shared (see getOrCreateFolder) — files
+      // created inside it inherit that access, so no per-file setSharing().
+      var folder = getOrCreateFolder('Attendance Photos');
+      var imageData = data.photo.replace(/^data:image\/\w+;base64,/, '');
+      var blob = Utilities.newBlob(
+        Utilities.base64Decode(imageData),
+        'image/jpeg',
+        data.name + '_' + serverTs.replace(/[: ]/g, '-') + '.jpg'
+      );
+      var file = folder.createFile(blob);
+      photoUrl = 'https://drive.google.com/uc?id=' + file.getId();
+    }
+
+    sheet.appendRow([
+      data.name,
+      data.dest,
+      data.type === 'in' ? 'Log In' : 'Log Out',
+      serverTs,
+      address,
+      data.lat || '',
+      data.lng || '',
+      photoUrl
+    ]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: 'success',
+        serverTs: serverTs,
+        address: address
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: 'error',
+        message: err.toString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function reverseGeocodeServer(lat, lng) {
+  try {
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat='
+      + lat + '&lon=' + lng + '&zoom=17&addressdetails=1';
+    var response = UrlFetchApp.fetch(url, {
+      headers: { 'User-Agent': 'PhotolineAttendance/1.0' },
+      muteHttpExceptions: true
+    });
+    var json = JSON.parse(response.getContentText());
+    if (json && json.address) {
+      var a = json.address;
+      var parts = [
+        a.road || a.pedestrian || a.footway || a.neighbourhood,
+        a.suburb || a.village || a.town || a.city_district,
+        a.city || a.municipality || a.county
+      ].filter(Boolean);
+      return parts.length
+        ? parts.join(', ')
+        : json.display_name.split(',').slice(0,3).join(',').trim();
+    }
+  } catch(e) {
+    Logger.log('Geocode error: ' + e);
+  }
+  return '';
+}
+
+function getOrCreateFolder(name) {
+  var props = PropertiesService.getScriptProperties();
+  var cachedId = props.getProperty('ATTENDANCE_FOLDER_ID');
+  if (cachedId) {
+    try {
+      return DriveApp.getFolderById(cachedId);
+    } catch (e) {
+      // Cached id is stale (folder deleted/moved) — fall through and recreate.
+    }
+  }
+  var folders = DriveApp.getFoldersByName(name);
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  props.setProperty('ATTENDANCE_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+function doGet(e) {
+  try {
+    // ── Geocode proxy ──
+    if(e.parameter.action === 'geocode') {
+      var lat = parseFloat(e.parameter.lat);
+      var lng = parseFloat(e.parameter.lng);
+      var address = reverseGeocodeServer(lat, lng);
+      var geoJson = JSON.stringify({ address: address });
+      var geoCallback = e.parameter.callback;
+      if(geoCallback){
+        return ContentService
+          .createTextOutput(geoCallback + '(' + geoJson + ')')
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      return ContentService
+        .createTextOutput(geoJson)
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Load sheet data ──
+    var sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getActiveSheet();
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var rows = data.slice(1).map(function(row){
+      var obj = {};
+      headers.forEach(function(h, i){
+        var val = row[i];
+        if(val instanceof Date){
+          obj[h] = Utilities.formatDate(val, 'Asia/Manila', 'yyyy-MM-dd HH:mm:ss');
+        } else {
+          obj[h] = val;
+        }
+      });
+      return obj;
+    });
+
+    var callback = e.parameter.callback;
+    var json = JSON.stringify({status:'ok', records:rows});
+
+    if(callback){
+      return ContentService
+        .createTextOutput(callback + '(' + json + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    return ContentService
+      .createTextOutput(json)
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({status:'error',message:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
