@@ -614,6 +614,7 @@ canvas{display:none}
     <div class="success-icon-wrap" id="successIcon"></div>
     <div class="success-title" id="successTitle"></div>
     <div class="success-sub" id="successSub"></div>
+    <div id="syncStatus" style="font-size:12px;font-weight:700;margin-top:4px"></div>
     <div id="savePhotoTip" class="hidden" style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin:10px 20px 0;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">📲</span>
       <p style="font-size:13px;font-weight:700;color:#1e40af;margin:0;line-height:1.5">
@@ -660,6 +661,8 @@ let camStream = null;
 let facingMode = 'user';
 let actionType = 'in';
 let records = JSON.parse(localStorage.getItem('attendRecords2') || '[]');
+// Legacy records were only ever cached after the old submit flow finished waiting on the server, so treat them as already synced.
+records.forEach(r => { if(r.synced === undefined) r.synced = true; });
 
 // ── Clock ──
 function pad(n){return String(n).padStart(2,'0')}
@@ -1087,8 +1090,12 @@ function takePhoto(){
   const video = document.getElementById('camVideo');
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  canvas.width = video.videoWidth || 720;
-  canvas.height = video.videoHeight || 720;
+  const vw = video.videoWidth || 720, vh = video.videoHeight || 720;
+  // Cap the long edge so the base64 upload stays small — full camera resolution isn't needed to verify identity.
+  const MAX_DIM = 720;
+  const shrink = Math.min(1, MAX_DIM / Math.max(vw, vh));
+  canvas.width = Math.round(vw * shrink);
+  canvas.height = Math.round(vh * shrink);
 
   // Draw video - no flip (preview handles mirror via CSS scaleX)
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -1193,7 +1200,7 @@ function takePhoto(){
   const maxGpsW = W - pad3*2;
   wrapText(ctx, gpsLine, pad3, yBase + timeFs + Math.round(36*scale), maxGpsW, Math.round(16*scale));
 
-  capturedImg = canvas.toDataURL('image/jpeg', 0.88);
+  capturedImg = canvas.toDataURL('image/jpeg', 0.78);
 
   // Update preview
   const img = document.getElementById('previewImg');
@@ -1326,48 +1333,68 @@ function submitAttendance(){
   const timeStr = `${h}:${pad(d.getMinutes())} ${ampm}, ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
   saveName(name);
-  const record = { id: Date.now(), name, dest, type: actionType, ts, img: capturedImg, gps: gps ? {...gps} : null };
+  const record = { id: Date.now(), name, dest, type: actionType, ts, img: capturedImg, gps: gps ? {...gps} : null, synced: false };
   records.unshift(record);
+  persistRecords();
+
+  // Show success immediately — the actual save happens in the background (see syncRecord).
+  showSuccess(record, timeStr);
+  syncRecord(record);
+}
+
+function persistRecords(){
   try{ localStorage.setItem('attendRecords2', JSON.stringify(records)); }catch(e){}
+}
 
-  // Show loading
-  const btn = document.getElementById('submitBtn');
-  const origText = btn.innerHTML;
-  btn.innerHTML = '⏳ &nbsp;Saving...';
-  btn.disabled = true;
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbz_zBYdZOXcsEE5xL2c-Q60_TDavKSGT5QhRAyjDhceziNnxgASXTGd2Y7ZbT61Hdt8oA/exec';
+const SYNC_RETRY_DELAYS_MS = [5000, 15000, 45000];
+const syncInFlight = new Set();
+let activeSuccessRecordId = null;
 
-  // Send to Google Sheets + Drive
+function syncRecord(record, attempt){
+  attempt = attempt || 0;
+  if(record.synced || syncInFlight.has(record.id)) return;
+  syncInFlight.add(record.id);
+
   const payload = {
-    name: name,
-    dest: dest,
-    type: actionType,
-    ts: ts,
-    address: gps && gps.address ? gps.address : '',
-    lat: gps ? gps.lat.toFixed(6) : '',
-    lng: gps ? gps.lng.toFixed(6) : '',
-    photo: capturedImg
+    name: record.name,
+    dest: record.dest,
+    type: record.type,
+    ts: record.ts,
+    address: record.gps && record.gps.address ? record.gps.address : '',
+    lat: record.gps ? record.gps.lat.toFixed(6) : '',
+    lng: record.gps ? record.gps.lng.toFixed(6) : '',
+    photo: record.img
   };
 
-  fetch('https://script.google.com/macros/s/AKfycbz_zBYdZOXcsEE5xL2c-Q60_TDavKSGT5QhRAyjDhceziNnxgASXTGd2Y7ZbT61Hdt8oA/exec', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  })
-  .then(function(res){ return res.json(); })
-  .then(function(data){
-    btn.innerHTML = origText;
-    btn.disabled = false;
-    if(data.status === 'success'){
-      record.serverTs = data.serverTs;
-    }
-    showSuccess(record, timeStr);
-  })
-  .catch(function(err){
-    // Still show success even if network fails
-    btn.innerHTML = origText;
-    btn.disabled = false;
-    showSuccess(record, timeStr);
-  });
+  fetch(SUBMIT_URL, { method: 'POST', body: JSON.stringify(payload) })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      syncInFlight.delete(record.id);
+      record.synced = true;
+      record.syncFailed = false;
+      if(data && data.serverTs) record.serverTs = data.serverTs;
+      persistRecords();
+      if(activeSuccessRecordId === record.id) renderSyncStatus(record);
+    })
+    .catch(function(){
+      syncInFlight.delete(record.id);
+      if(attempt < SYNC_RETRY_DELAYS_MS.length){
+        setTimeout(function(){ syncRecord(record, attempt + 1); }, SYNC_RETRY_DELAYS_MS[attempt]);
+      } else {
+        record.syncFailed = true;
+        persistRecords();
+      }
+      if(activeSuccessRecordId === record.id) renderSyncStatus(record);
+    });
 }
+
+function syncPendingRecords(){
+  records.filter(function(r){ return !r.synced; }).forEach(function(r){ syncRecord(r); });
+}
+
+window.addEventListener('online', syncPendingRecords);
+syncPendingRecords();
 
 function showFormError(msg){
   var el = document.getElementById('formError');
@@ -1408,9 +1435,33 @@ function showSuccess(r, timeStr){
   var fw = document.getElementById('formMapWrap');
   if(fw) fw.style.visibility = 'hidden';
 
+  activeSuccessRecordId = r.id;
+  renderSyncStatus(r);
+}
 
-
-
+function renderSyncStatus(r){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if(r.synced){
+    el.textContent = '✅ Saved to Google Sheets';
+    el.style.color = '#16a34a';
+    el.style.cursor = 'default';
+    el.onclick = null;
+  } else if(r.syncFailed){
+    el.textContent = '⚠️ Not saved yet — tap to retry';
+    el.style.color = '#dc2626';
+    el.style.cursor = 'pointer';
+    el.onclick = function(){
+      r.syncFailed = false;
+      renderSyncStatus(r);
+      syncRecord(r, 0);
+    };
+  } else {
+    el.textContent = '🔄 Saving to Google Sheets…';
+    el.style.color = '#f59e0b';
+    el.style.cursor = 'default';
+    el.onclick = null;
+  }
 }
 
 
