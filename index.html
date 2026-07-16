@@ -1443,7 +1443,7 @@ function renderSyncStatus(r){
   const el = document.getElementById('syncStatus');
   if(!el) return;
   if(r.synced){
-    el.textContent = '✅ Saved to Google Sheets';
+    el.textContent = '✅ Logs Recorded';
     el.style.color = '#16a34a';
     el.style.cursor = 'default';
     el.onclick = null;
@@ -1457,7 +1457,7 @@ function renderSyncStatus(r){
       syncRecord(r, 0);
     };
   } else {
-    el.textContent = '🔄 Saving to Google Sheets…';
+    el.textContent = '⏳ Please don\'t close, wait — still saving...';
     el.style.color = '#f59e0b';
     el.style.cursor = 'default';
     el.onclick = null;
