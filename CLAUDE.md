@@ -8,6 +8,7 @@ Static GitHub Pages site — no build step, no package manager, no tests. All co
 
 - `index.html` — employee-facing attendance form (selfie + GPS log in/out)
 - `admin.html` — password-protected admin dashboard (view, filter, export, print all records)
+- `Code.gs` — local mirror of the Google Apps Script backend source, kept for reference/version-tracking. **Not deployed automatically** — the live backend only updates when this is manually pasted into the Apps Script editor and redeployed. `OldAppscrip.txt` is a backup of the pre-optimization version, kept for comparison.
 
 ## Deploying changes
 
@@ -22,20 +23,20 @@ git push origin main
 ## Architecture
 
 ### Backend: Google Apps Script
-Both pages talk to a single Google Apps Script web app (`SCRIPT_URL` in each file). The script reads/writes a Google Sheet and handles:
-- `action=submit` — append a new attendance row (called from `index.html`)
-- `action=geocode&lat=&lng=&callback=` — reverse geocode via JSONP (called from `admin.html` to avoid CORS)
+Both pages talk to the same Google Apps Script web app deployment (`SUBMIT_URL` in `index.html`, `SCRIPT_URL` in `admin.html` — kept in sync manually, there's no shared config, so re-check both if the deployment URL ever changes). The script reads/writes a Google Sheet and handles:
+- `doPost` — append a new attendance row + upload the selfie to Drive (called from `index.html`'s `syncRecord()`)
+- `action=geocode&lat=&lng=&callback=` (via `doGet`) — reverse geocode via JSONP (called from `admin.html` to avoid CORS)
 
-The script URL in `index.html` and `admin.html` may differ — `index.html` uses an older deployment, `admin.html` uses a newer one.
+Backend perf notes (see `Code.gs` vs `OldAppscrip.txt` for the diff): `doPost` no longer does a synchronous Nominatim reverse-geocode call on the submit path (that's now left to `admin.html`'s lazy per-row geocoding), and the Drive folder id is cached via `PropertiesService` with sharing set once at the folder level instead of per uploaded file.
 
 ### Data source: Google Sheets CSV
 `admin.html` reads all records by fetching a public CSV export URL (`CSV_URL`) from Google Sheets directly in the browser. Records are parsed client-side with a custom CSV parser (`parseCSV()`).
 
 ### index.html — key flows
 - **GPS**: `startGPS()` uses `navigator.geolocation.watchPosition`. Fake GPS is detected via speed checks (`isMockLocation()`), known spoofed coordinates, and `gps.mocked` flag. GPS state is stored in the `gps` global.
-- **Camera**: `openCamera()` calls `getUserMedia`, explicitly calls `video.play()` for iOS/in-app browser compatibility, and detects in-app browsers (`isInAppBrowser()`) to warn before attempting.
-- **Submission**: `submitAttendance()` POSTs form data (name, destination, type, GPS, base64 photo) to the Apps Script URL as JSON.
-- **Local cache**: Recent records stored in `localStorage` key `attendRecords2`.
+- **Camera**: `openCamera()` calls `getUserMedia`, explicitly calls `video.play()` for iOS/in-app browser compatibility, and detects in-app browsers (`isInAppBrowser()`) to warn before attempting. `takePhoto()` caps the captured frame to 720px on the long edge and encodes at JPEG quality 0.78 (was full camera resolution @ 0.88) to keep the upload small.
+- **Submission (optimistic)**: `submitAttendance()` shows the success screen immediately — it does not wait on the network. The record is saved to `localStorage` as `synced: false`, then `syncRecord()` POSTs it to `SUBMIT_URL` in the background. On success the record flips to `synced: true`; on failure it retries with backoff (5s/15s/45s) and again on the browser `online` event, and `syncPendingRecords()` re-attempts any still-unsynced records on every page load. The success screen's `#syncStatus` line reflects live state ("Please don't close..." → "✅ Logs Recorded", or a tap-to-retry prompt if all retries fail) so a failed save is never silent.
+- **Local cache**: Recent records stored in `localStorage` key `attendRecords2`. Records cached before this sync-tracking existed are migrated to `synced: true` on load (they were only ever cached after the old blocking flow completed).
 
 ### admin.html — key flows
 - **Auth**: Plain password check against hardcoded `ADMIN_PASS`. Session persisted in `sessionStorage`.
