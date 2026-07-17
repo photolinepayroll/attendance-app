@@ -688,6 +688,23 @@ let clockVerifiedAt = 0; // Date.now() of the last successful network-time check
 const CLOCK_DRIFT_LIMIT_MS = 2 * 60 * 1000; // 2 minutes
 const CLOCK_CHECK_INTERVAL_MS = 30 * 1000;
 const CLOCK_VERIFIED_TTL_MS = CLOCK_CHECK_INTERVAL_MS + 5000; // small buffer over the recheck interval
+
+// Monotonic-clock tamper detector: performance.now() keeps ticking at a steady rate
+// regardless of the user changing the system date/time, so if it and Date.now() ever
+// stop agreeing on elapsed time since the last verified anchor, the wall clock was
+// manually changed — catches someone verifying while online then tampering offline.
+let perfAnchor = performance.now();
+let dateAnchor = Date.now();
+const CLOCK_JUMP_THRESHOLD_MS = 3000; // slack for timer jitter/background throttling
+function setClockAnchor(){
+  perfAnchor = performance.now();
+  dateAnchor = Date.now();
+}
+function hasClockJumped(){
+  const monotonicElapsed = performance.now() - perfAnchor;
+  const dateElapsed = Date.now() - dateAnchor;
+  return Math.abs(dateElapsed - monotonicElapsed) > CLOCK_JUMP_THRESHOLD_MS;
+}
 async function checkNetworkTime(){
   try{
     const t0 = Date.now();
@@ -698,6 +715,7 @@ async function checkNetworkTime(){
     const serverNow = new Date(serverDate).getTime() + (t1 - t0) / 2;
     clockOffsetMs = serverNow - t1;
     clockVerifiedAt = t1;
+    setClockAnchor();
   } catch(e){
     // Offline or request failed — can't verify this round. `isClockVerified()` will
     // expire on its own once CLOCK_VERIFIED_TTL_MS passes since the last good check.
@@ -712,7 +730,8 @@ function isClockVerified(){
   return clockOffsetMs !== null && (Date.now() - clockVerifiedAt) < CLOCK_VERIFIED_TTL_MS;
 }
 function isClockBad(){
-  return clockOffsetMs !== null && Math.abs(clockOffsetMs) > CLOCK_DRIFT_LIMIT_MS;
+  if(clockOffsetMs === null) return false; // "unverified" is already handled by isClockVerified()
+  return Math.abs(clockOffsetMs) > CLOCK_DRIFT_LIMIT_MS || hasClockJumped();
 }
 // Combined gate used everywhere Log In/Out or the camera would otherwise proceed.
 function isClockGateBlocked(){
@@ -746,6 +765,10 @@ function trustedNow(){
 }
 function pad(n){return String(n).padStart(2,'0')}
 function updateClock(){
+  // Piggyback the clock-jump check on this existing 1Hz tick so a manually-changed
+  // system clock is caught within ~1s, without waiting for the next network recheck.
+  updateClockWarnUI();
+  checkInputs();
   const d = trustedNow();
   let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
