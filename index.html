@@ -517,7 +517,7 @@ canvas{display:none}
     <div class="gps-warn-icon" style="font-size:24px">🕐</div>
     <div style="flex:1">
       <p id="clockWarnMsg" style="font-weight:700;font-size:14px;margin-bottom:4px">Wrong ang oras ng phone mo!</p>
-      <small style="font-size:12px;color:#7f1d1d;line-height:1.6;display:block">
+      <small id="clockWarnDetail" style="font-size:12px;color:#7f1d1d;line-height:1.6;display:block">
         I-set sa <strong>Settings → Date & Time → Automatic (Sync by network provider)</strong>. Di ka pa maka-Log In/Out hanggang di pa naaayos.
       </small>
       <div style="margin-top:10px">
@@ -684,7 +684,10 @@ records.forEach(r => { if(r.synced === undefined) r.synced = true; });
 // ends up in a record or on the selfie watermark is corrected using this offset instead
 // of trusting `new Date()` directly.
 let clockOffsetMs = null;
+let clockVerifiedAt = 0; // Date.now() of the last successful network-time check
 const CLOCK_DRIFT_LIMIT_MS = 2 * 60 * 1000; // 2 minutes
+const CLOCK_CHECK_INTERVAL_MS = 30 * 1000;
+const CLOCK_VERIFIED_TTL_MS = CLOCK_CHECK_INTERVAL_MS + 5000; // small buffer over the recheck interval
 async function checkNetworkTime(){
   try{
     const t0 = Date.now();
@@ -694,26 +697,50 @@ async function checkNetworkTime(){
     if(!serverDate) return clockOffsetMs;
     const serverNow = new Date(serverDate).getTime() + (t1 - t0) / 2;
     clockOffsetMs = serverNow - t1;
+    clockVerifiedAt = t1;
   } catch(e){
-    // Offline or request failed — can't verify, leave offset as-is (fail-open).
+    // Offline or request failed — can't verify this round. `isClockVerified()` will
+    // expire on its own once CLOCK_VERIFIED_TTL_MS passes since the last good check.
   }
   updateClockWarnUI();
   checkInputs();
   return clockOffsetMs;
 }
+// True only if we've confirmed real network time recently — a phone with no connectivity
+// (data off) can't have its clock verified at all, so it must not count as "fine".
+function isClockVerified(){
+  return clockOffsetMs !== null && (Date.now() - clockVerifiedAt) < CLOCK_VERIFIED_TTL_MS;
+}
 function isClockBad(){
   return clockOffsetMs !== null && Math.abs(clockOffsetMs) > CLOCK_DRIFT_LIMIT_MS;
 }
+// Combined gate used everywhere Log In/Out or the camera would otherwise proceed.
+function isClockGateBlocked(){
+  return !isClockVerified() || isClockBad();
+}
 function updateClockWarnUI(){
   const warn = document.getElementById('clockWarn');
+  const msg = document.getElementById('clockWarnMsg');
+  const small = document.getElementById('clockWarnDetail');
   if(!warn) return;
-  warn.style.display = isClockBad() ? 'flex' : 'none';
+  if(!isClockGateBlocked()){
+    warn.style.display = 'none';
+    return;
+  }
+  warn.style.display = 'flex';
+  if(!isClockVerified()){
+    msg.textContent = 'Walang internet konek!';
+    small.innerHTML = 'Kailangan ng internet/data para ma-verify ang oras. Di ka pa maka-Log In/Out hanggang di pa naka-konek.';
+  } else {
+    msg.textContent = 'Wrong ang oras ng phone mo!';
+    small.innerHTML = 'I-set sa <strong>Settings → Date & Time → Automatic (Sync by network provider)</strong>. Di ka pa maka-Log In/Out hanggang di pa naaayos.';
+  }
 }
 function retryClockCheck(){
   checkNetworkTime();
 }
 // Re-check periodically in case the phone's clock is changed mid-session (no page reload needed to catch it).
-setInterval(checkNetworkTime, 30000);
+setInterval(checkNetworkTime, CLOCK_CHECK_INTERVAL_MS);
 function trustedNow(){
   return new Date(Date.now() + (clockOffsetMs || 0));
 }
@@ -947,7 +974,7 @@ function saveName(name){
 function checkInputs(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
-  const ok = name.length > 0 && dest.length > 0 && gpsReady && !isClockBad();
+  const ok = name.length > 0 && dest.length > 0 && gpsReady && !isClockGateBlocked();
   document.getElementById('btnIn').disabled = !ok;
   document.getElementById('btnOut').disabled = !ok;
 }
@@ -960,9 +987,9 @@ loadSavedName();
 
 // ── Action toggle ──
 function selectAction(type){
-  // Safety net: buttons are already disabled via checkInputs() when the clock is bad,
+  // Safety net: buttons are already disabled via checkInputs() when the clock is unverified/bad,
   // but guard here too in case this fires before that state settles.
-  if(isClockBad()){
+  if(isClockGateBlocked()){
     updateClockWarnUI();
     document.getElementById('clockWarn').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
@@ -1025,7 +1052,7 @@ function showNotice(msg){
 // ── Camera ──
 async function openCamera(){
   // Safety net: same clock-integrity gate as selectAction()/submitAttendance().
-  if(isClockBad()){
+  if(isClockGateBlocked()){
     updateClockWarnUI();
     document.getElementById('clockWarn').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
@@ -1394,8 +1421,10 @@ async function submitAttendance(){
 
   // ── Clock integrity check ──
   await checkNetworkTime();
-  if(isClockBad()){
-    showFormError('🚫 Wrong ang oras ng phone mo! I-set sa Automatic (Sync by network provider).');
+  if(isClockGateBlocked()){
+    showFormError(isClockVerified()
+      ? '🚫 Wrong ang oras ng phone mo! I-set sa Automatic (Sync by network provider).'
+      : '🚫 Walang internet konek! Kailangan ng net para ma-verify ang oras.');
     return;
   }
 
