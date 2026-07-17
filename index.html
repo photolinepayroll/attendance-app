@@ -512,6 +512,21 @@ canvas{display:none}
       </div>
     </div>
   </div>
+
+  <div class="gps-warn" id="clockWarn" style="display:none">
+    <div class="gps-warn-icon" style="font-size:24px">🕐</div>
+    <div style="flex:1">
+      <p id="clockWarnMsg" style="font-weight:700;font-size:14px;margin-bottom:4px">Wrong ang oras ng phone mo!</p>
+      <small style="font-size:12px;color:#7f1d1d;line-height:1.6;display:block">
+        I-set sa <strong>Settings → Date & Time → Automatic (Sync by network provider)</strong>. Di ka pa maka-Log In/Out hanggang di pa naaayos.
+      </small>
+      <div style="margin-top:10px">
+        <button onclick="retryClockCheck()" style="background:#dc2626;border:none;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          🔄 Subukan Ulit
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="card">
     <!-- Employee Info -->
     <div class="form-section">
@@ -665,9 +680,46 @@ let records = JSON.parse(localStorage.getItem('attendRecords2') || '[]');
 records.forEach(r => { if(r.synced === undefined) r.synced = true; });
 
 // ── Clock ──
+// Phones can have their date/time set manually (wrong clock), so any timestamp that
+// ends up in a record or on the selfie watermark is corrected using this offset instead
+// of trusting `new Date()` directly.
+let clockOffsetMs = null;
+const CLOCK_DRIFT_LIMIT_MS = 2 * 60 * 1000; // 2 minutes
+async function checkNetworkTime(){
+  try{
+    const t0 = Date.now();
+    const res = await fetch(location.pathname + '?_=' + t0, { method: 'HEAD', cache: 'no-store' });
+    const t1 = Date.now();
+    const serverDate = res.headers.get('date');
+    if(!serverDate) return clockOffsetMs;
+    const serverNow = new Date(serverDate).getTime() + (t1 - t0) / 2;
+    clockOffsetMs = serverNow - t1;
+  } catch(e){
+    // Offline or request failed — can't verify, leave offset as-is (fail-open).
+  }
+  updateClockWarnUI();
+  checkInputs();
+  return clockOffsetMs;
+}
+function isClockBad(){
+  return clockOffsetMs !== null && Math.abs(clockOffsetMs) > CLOCK_DRIFT_LIMIT_MS;
+}
+function updateClockWarnUI(){
+  const warn = document.getElementById('clockWarn');
+  if(!warn) return;
+  warn.style.display = isClockBad() ? 'flex' : 'none';
+}
+function retryClockCheck(){
+  checkNetworkTime();
+}
+// Re-check periodically in case the phone's clock is changed mid-session (no page reload needed to catch it).
+setInterval(checkNetworkTime, 30000);
+function trustedNow(){
+  return new Date(Date.now() + (clockOffsetMs || 0));
+}
 function pad(n){return String(n).padStart(2,'0')}
 function updateClock(){
-  const d = new Date();
+  const d = trustedNow();
   let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   const s = d.getSeconds();
@@ -851,6 +903,7 @@ function setGPSUI(s, txt){
   document.getElementById('gpsText').textContent = txt;
 }
 startGPS();
+checkNetworkTime();
 
 // Enable Log In/Out only when name AND destination are filled
 // ── Name persistence ──
@@ -894,7 +947,7 @@ function saveName(name){
 function checkInputs(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
-  const ok = name.length > 0 && dest.length > 0 && gpsReady;
+  const ok = name.length > 0 && dest.length > 0 && gpsReady && !isClockBad();
   document.getElementById('btnIn').disabled = !ok;
   document.getElementById('btnOut').disabled = !ok;
 }
@@ -907,6 +960,13 @@ loadSavedName();
 
 // ── Action toggle ──
 function selectAction(type){
+  // Safety net: buttons are already disabled via checkInputs() when the clock is bad,
+  // but guard here too in case this fires before that state settles.
+  if(isClockBad()){
+    updateClockWarnUI();
+    document.getElementById('clockWarn').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   actionType = type;
   document.getElementById('btnIn').className = 'toggle-btn' + (type === 'in' ? ' selected-in' : '');
   document.getElementById('btnOut').className = 'toggle-btn' + (type === 'out' ? ' selected-out' : '');
@@ -964,6 +1024,12 @@ function showNotice(msg){
 
 // ── Camera ──
 async function openCamera(){
+  // Safety net: same clock-integrity gate as selectAction()/submitAttendance().
+  if(isClockBad()){
+    updateClockWarnUI();
+    document.getElementById('clockWarn').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   clearPhotoTimer();
   // Hide map when camera opens (Leaflet z-index conflict)
   var mapWrap = document.getElementById('formMapWrap');
@@ -1105,7 +1171,7 @@ function takePhoto(){
 
   // ── TOP BAR: Big Date + Name + Destination + Badge ──
   const pad2 = n => String(n).padStart(2,'0');
-  const d = new Date();
+  const d = trustedNow();
   const days2=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months2=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const bigDate = pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + '/' + d.getFullYear();
@@ -1291,7 +1357,7 @@ function expirePhoto(){
   }, 2000);
 }
 
-function submitAttendance(){
+async function submitAttendance(){
   const name = document.getElementById('empName').value.trim();
   const dest = document.getElementById('empDest').value.trim();
 
@@ -1326,7 +1392,14 @@ function submitAttendance(){
     }
   }
 
-  const d = new Date();
+  // ── Clock integrity check ──
+  await checkNetworkTime();
+  if(isClockBad()){
+    showFormError('🚫 Wrong ang oras ng phone mo! I-set sa Automatic (Sync by network provider).');
+    return;
+  }
+
+  const d = trustedNow();
   const pad = n => String(n).padStart(2,'0');
   const ts = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   let h = d.getHours(), ampm = h >= 12 ? 'PM' : 'AM'; h = h%12||12;
