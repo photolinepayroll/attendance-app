@@ -44,3 +44,8 @@ Backend perf notes (see `Code.gs` vs `OldAppscrip.txt` for the diff): `doPost` n
 - **Rendering**: `renderTable()` renders 50 rows at a time (pagination via `currentPage` / `PAGE_SIZE`). Geocode requests for visible rows are staggered at 1100ms intervals to respect Nominatim rate limits.
 - **Geocoding**: Uses JSONP to call the Apps Script `action=geocode` endpoint (avoids CORS from GitHub Pages). Results cached in `_geoCache`.
 - **Export/Print**: `exportCSV()` and `printPreview()` operate on `getSelectedRecords()` — either checked rows or all filtered rows if none checked.
+
+### admin.html — Sequence Report & parsing notes
+- **Sequence Report**: `exportSequenceCSV()` (button `📋 Sequence Report`) exports one row per employee per date with times transposed across `Time 1…N`, sorted by name, then date, then time. Time cells are written as `="H:MM AM"` so Excel keeps uppercase AM/PM as text. It does not touch `exportCSV()`, which the liquidation workbook depends on.
+- **Timestamps**: the sheet mixes zero-padded (`14:18:08`) and unpadded (`2:18:08`) hours. `formatTs()` and the report sort key accept `\d{1,2}` hours. `getHour()` still uses `\d{2}` (known gap, affects the day/evening/OT stats).
+- **Live Server**: never put a literal `</body>` inside a JS string. Live Server injects its script at the first `</body>` and breaks the page. `printPreview()` splits it as `'</bo'+'dy>'`.

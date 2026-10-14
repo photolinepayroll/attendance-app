@@ -229,7 +229,7 @@ function loadData(){
 function formatTs(raw){
   if(!raw) return '—';
   var s = String(raw).trim().replace('T',' ').replace('Z','').replace(/\.\d+$/,'');
-  var parts = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+  var parts = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})/);
   if(!parts) return s;
   var h=parseInt(parts[4]), mi=parts[5], ampm=h>=12?'PM':'AM';
   h=h%12||12;
@@ -533,7 +533,7 @@ function printPreview(){
   html+='<div class="no-print" style="position:fixed;top:20px;right:20px;display:flex;gap:10px">';
   html+='<button onclick="window.print()" style="background:#1e40af;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>';
   html+='<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">✕ Close</button>';
-  html+='</div></body></html>';
+  html+='</div></bo'+'dy></html>'; // split so Live Server doesn't inject its script into this string
   var win=window.open('','_blank');
   if(win){ win.document.write(html); win.document.close(); }
 }
@@ -561,9 +561,9 @@ function exportSequenceCSV(){
   if(selCount > 0 && !confirm('Export ' + selCount + ' selected record(s)?')) return;
   var items = toExport.map(function(r){
     var s = String(r.Timestamp||'').trim().replace('T',' ');
-    var m = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+    var m = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})/);
     var ts = splitTs(r.Timestamp);
-    return {name:r.Name||'', date:ts.date, time:ts.time.trim(), key:m?m[1]+m[2]+m[3]+m[4]+m[5]:'9'};
+    return {name:r.Name||'', date:ts.date, time:ts.time.trim(), key:m?m[1]+m[2]+m[3]+('0'+m[4]).slice(-2)+m[5]:'9'};
   });
   items.sort(function(a,b){
     var na=a.name.toLowerCase(), nb=b.name.toLowerCase();
@@ -582,7 +582,7 @@ function exportSequenceCSV(){
   for(var t=1;t<=maxTimes;t++) header.push('Time '+t);
   var rows=[header].concat(groups.map(function(g){
     var row=['"'+g.name+'"','"'+g.date+'"'];
-    for(var t=0;t<maxTimes;t++) row.push(t<g.times.length?'"'+g.times[t]+'"':'');
+    for(var t=0;t<maxTimes;t++) row.push(t<g.times.length?'="'+g.times[t].toUpperCase()+'"':''); // ="..." keeps Excel from reformatting to lowercase am/pm
     return row;
   }));
   var csv=rows.map(function(r){return r.join(',');}).join('\n');

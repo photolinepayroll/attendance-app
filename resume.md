@@ -33,3 +33,19 @@ Make submitting an attendance selfie feel faster. Reported pain point was specif
 ## Notes for next time
 - No build step / package manager / tests in this repo — plain HTML/JS, edit and push directly to `main` (~1 min to go live via GitHub Pages).
 - The Apps Script backend is NOT in git by default — `Code.gs` here is a manually-maintained mirror; keep it updated if the live script changes.
+
+---
+
+# Session summary — Sequence Report export + Live Server fix (admin.html)
+
+## What changed (`admin.html` only)
+- **`📋 Sequence Report` button** next to Export CSV → `exportSequenceCSV()`. One row per employee per date: `Name, Date, Time 1 … Time N`, names A–Z, dates ascending, times ascending (Log In and Log Out both included, padded with empty cells). Uses checked rows, or all filtered rows if none checked. Export CSV is unchanged (the liquidation depends on it).
+- Time cells are written as `="4:05 AM"` (uppercase, forced text) because Excel otherwise reformats plain times to lowercase `am/pm`. They are text, not Excel time values.
+- **Timestamp bug fix:** the sheet has timestamps with unpadded hours (`2026-10-10 2:18:08`). `formatTs()` and the report sort key now accept 1–2 digit hours (before, those rows showed raw times with no AM/PM and sorted last).
+- **Live Server fix:** `printPreview()`'s `'</body></html>'` string is split as `'</bo'+'dy></html>'`, since Live Server injects its script at the first `</body>` it finds, which broke the page script (login did nothing).
+
+## Known leftover
+- `getHour()` still matches only two-digit hours, so day/evening/OT stats skip unpadded-hour rows. Left alone because fixing it changes the counts.
+
+## Testing locally
+Open with Live Server (or `python -m http.server`) and hard-refresh (Ctrl+F5). Admin password is in `ADMIN_PASS`.
