@@ -131,6 +131,7 @@ td{padding:12px 16px;font-size:13px;color:#1e293b;vertical-align:middle}
       </div>
       <div style="display:flex;gap:8px;margin-left:auto">
         <button class="export-btn" style="margin-left:0" onclick="exportCSV()">⬇️ Export CSV</button>
+        <button class="export-btn" style="margin-left:0" onclick="exportSequenceCSV()">📋 Name/Date/Time</button>
         <button onclick="printPreview()" style="padding:9px 18px;border-radius:8px;border:none;background:#1e40af;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px">🖨️ Print PDF</button>
       </div>
     </div>
@@ -551,6 +552,27 @@ function exportCSV(){
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='attendance_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function exportSequenceCSV(){
+  var toExport = getSelectedRecords();
+  var selCount = document.querySelectorAll('.row-check:checked').length;
+  if(!toExport.length){alert('No records to export.');return;}
+  if(selCount > 0 && !confirm('Export ' + selCount + ' selected record(s)?')) return;
+  var items = toExport.map(function(r){
+    var s = String(r.Timestamp||'').trim().replace('T',' ');
+    var m = s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+    var ts = splitTs(r.Timestamp);
+    return {name:r.Name||'', date:ts.date, time:ts.time.trim(), key:m?m[1]+m[2]+m[3]+m[4]+m[5]:'9'};
+  });
+  items.sort(function(a,b){ return a.key<b.key?-1:a.key>b.key?1:0; });
+  var rows=[['Name','Date','Time']].concat(items.map(function(i){
+    return ['"'+i.name+'"','"'+i.date+'"','"'+i.time+'"'];
+  }));
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='attendance_sequence_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 </script>
