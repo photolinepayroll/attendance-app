@@ -565,9 +565,25 @@ function exportSequenceCSV(){
     var ts = splitTs(r.Timestamp);
     return {name:r.Name||'', date:ts.date, time:ts.time.trim(), key:m?m[1]+m[2]+m[3]+m[4]+m[5]:'9'};
   });
-  items.sort(function(a,b){ return a.key<b.key?-1:a.key>b.key?1:0; });
-  var rows=[['Name','Date','Time']].concat(items.map(function(i){
-    return ['"'+i.name+'"','"'+i.date+'"','"'+i.time+'"'];
+  items.sort(function(a,b){
+    var na=a.name.toLowerCase(), nb=b.name.toLowerCase();
+    if(na!==nb) return na<nb?-1:1;
+    return a.key<b.key?-1:a.key>b.key?1:0;
+  });
+  var groups=[], byKey={}, maxTimes=0;
+  items.forEach(function(i){
+    var gk=i.name.toLowerCase()+'|'+i.date;
+    var g=byKey[gk];
+    if(!g){ g=byKey[gk]={name:i.name,date:i.date,times:[]}; groups.push(g); }
+    g.times.push(i.time);
+    if(g.times.length>maxTimes) maxTimes=g.times.length;
+  });
+  var header=['Name','Date'];
+  for(var t=1;t<=maxTimes;t++) header.push('Time '+t);
+  var rows=[header].concat(groups.map(function(g){
+    var row=['"'+g.name+'"','"'+g.date+'"'];
+    for(var t=0;t<maxTimes;t++) row.push(t<g.times.length?'"'+g.times[t]+'"':'');
+    return row;
   }));
   var csv=rows.map(function(r){return r.join(',');}).join('\n');
   var a=document.createElement('a');
