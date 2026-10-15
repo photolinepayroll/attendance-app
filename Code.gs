@@ -9,13 +9,13 @@ function doPost(e) {
       .getActiveSheet();
 
     // Idempotency: the client re-sends a record whenever it never saw the reply
-    // (tab closed, flaky data), even if this script already saved it. Column I
+    // (tab closed, flaky data), even if this script already saved it. Column J
     // holds the client's record id; if it's already there, don't append again.
     var recordId = data.id ? String(data.id) : '';
     if (recordId) {
       var lastRow = sheet.getLastRow();
       if (lastRow > 1) {
-        var ids = sheet.getRange(2, 9, lastRow - 1, 1).getValues();
+        var ids = sheet.getRange(2, 10, lastRow - 1, 1).getValues();
         for (var i = 0; i < ids.length; i++) {
           if (String(ids[i][0]) === recordId) {
             return ContentService
@@ -65,9 +65,10 @@ function doPost(e) {
       address,
       data.lat || '',
       data.lng || '',
-      photoUrl,
-      recordId
+      photoUrl
     ]);
+    // Column I is the BIO ID column (managed elsewhere) — don't touch it.
+    if (recordId) sheet.getRange(sheet.getLastRow(), 10).setValue(recordId);
 
     return ContentService
       .createTextOutput(JSON.stringify({
