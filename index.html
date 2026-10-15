@@ -1482,6 +1482,7 @@ function syncRecord(record, attempt){
   syncInFlight.add(record.id);
 
   const payload = {
+    id: record.id, // lets the backend drop a re-send of a record it already saved
     name: record.name,
     dest: record.dest,
     type: record.type,
@@ -1514,8 +1515,18 @@ function syncRecord(record, attempt){
     });
 }
 
+// A record still unsynced after this long is not silently re-sent on page load — it would land in the
+// sheet days later under a new server time. The user can still tap to retry from the success screen.
+const MAX_AUTO_SYNC_AGE_MS = 24 * 60 * 60 * 1000;
+
 function syncPendingRecords(){
-  records.filter(function(r){ return !r.synced; }).forEach(function(r){ syncRecord(r); });
+  records.filter(function(r){ return !r.synced; }).forEach(function(r){
+    if(Date.now() - r.id > MAX_AUTO_SYNC_AGE_MS){
+      if(!r.syncFailed){ r.syncFailed = true; persistRecords(); }
+      return;
+    }
+    syncRecord(r);
+  });
 }
 
 window.addEventListener('online', syncPendingRecords);

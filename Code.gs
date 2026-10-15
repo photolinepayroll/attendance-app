@@ -1,9 +1,34 @@
 function doPost(e) {
+  // Serialize writers so a retry racing the original request can't both pass the dedupe check.
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
   try {
     var data = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp
       .getActiveSpreadsheet()
       .getActiveSheet();
+
+    // Idempotency: the client re-sends a record whenever it never saw the reply
+    // (tab closed, flaky data), even if this script already saved it. Column I
+    // holds the client's record id; if it's already there, don't append again.
+    var recordId = data.id ? String(data.id) : '';
+    if (recordId) {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        var ids = sheet.getRange(2, 9, lastRow - 1, 1).getValues();
+        for (var i = 0; i < ids.length; i++) {
+          if (String(ids[i][0]) === recordId) {
+            return ContentService
+              .createTextOutput(JSON.stringify({
+                status: 'success',
+                duplicate: true,
+                serverTs: String(sheet.getRange(i + 2, 4).getDisplayValue())
+              }))
+              .setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+    }
 
     var serverTs = Utilities.formatDate(
       new Date(),
@@ -40,7 +65,8 @@ function doPost(e) {
       address,
       data.lat || '',
       data.lng || '',
-      photoUrl
+      photoUrl,
+      recordId
     ]);
 
     return ContentService
@@ -58,6 +84,8 @@ function doPost(e) {
         message: err.toString()
       }))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
   }
 }
 
